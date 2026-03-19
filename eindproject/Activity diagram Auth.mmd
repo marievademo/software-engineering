@@ -1,0 +1,37 @@
+flowchart TB
+    A(["Start: Gebruiker opent app"]) --> B{"Heeft account?"}
+    B -- Nee --> C["Registratieformulier tonen"]
+    C --> D["Gebruiker vult naam, e-mail en wachtwoord in"]
+    D --> E{"Wachtwoord voldoet aan vereisten?"}
+    E -- Nee --> F["Foutmelding tonen: min. 8 tekens, hoofdletter, cijfer, speciaal teken"]
+    F --> D
+    E -- Ja --> G{"E-mail al in gebruik?"}
+    G -- Ja --> H["Foutmelding: e-mail bestaat al"]
+    H --> D
+    G -- Nee --> I["Account aanmaken"]
+    I --> J["Verificatie-e-mail versturen"]
+    J --> K{"E-mail geverifieerd?"}
+    K -- Nee --> L["Herinnering versturen"]
+    L --> K
+    K -- Ja --> M["Account geactiveerd"]
+    M --> N["Inlogscherm tonen"]
+    B -- Ja --> N
+    N --> O["Gebruiker voert e-mail en wachtwoord in"]
+    O --> P["Wachtwoord vergelijken met hash"]
+    P --> Q{"Inloggegevens correct?"}
+    Q -- Nee --> R["Mislukte poging registreren"]
+    R --> S{"5 mislukte pogingen?"}
+    S -- Ja --> T["Account tijdelijk blokkeren"]
+    T --> U["Foutmelding: account geblokkeerd"]
+    U --> V(["Einde: probeer later opnieuw"])
+    S -- Nee --> W["Foutmelding: ongeldige gegevens"]
+    W --> O
+    Q -- Ja --> X["JWT-token aanmaken"]
+    X --> Y["Gebruikersrol bepalen"]
+    Y --> Z{"Rol?"}
+    Z -- Klant --> AA["Naar klantmenu"]
+    Z -- Admin --> AB["Naar beheerderspaneel"]
+    Z -- Keuken/Bar --> AC["Naar keuken/bar interface"]
+    AA --> AD(["Einde"])
+    AB --> AD
+    AC --> AD
