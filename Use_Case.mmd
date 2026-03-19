@@ -1,0 +1,108 @@
+graph LR
+    %% Primaire actoren (links)
+    Klant([👤 Klant\nprimair])
+    Ober([👤 Ober\nprimair])
+    Admin([👤 Admin\nprimair])
+
+    %% Secundaire actoren (rechts)
+    Keuken([👤 Keuken/Bar\nsecundair])
+
+    subgraph Systeem["Restaurant Orderingssysteem"]
+
+        %% KLANT use cases
+        UC1(Bekijken van het menu)
+        UC2(Plaatsen van bestelling)
+        UC3(Betalen van bestelling)
+        UC4(Filteren van menu-items)
+        UC5(Registreren / Inloggen)
+        UC6(Registreren van allergieën)
+        UC7(Schrijven van recensie)
+        UC8(Sparen van punten)
+
+        %% OBER use cases
+        UC9(Raadplegen van tafeloverzicht)
+        UC10(Bezorgen van bestelling)
+        UC11(Opvolgen van orderstatus)
+
+        %% ADMIN use cases
+        UC12(Beheren van klantaccounts)
+        UC13(Aangeven van voorraad)
+        UC14(Monitoren van alle orders)
+        UC15(Maken van financiële rapporten)
+        UC16(Aanpassen van openingsuren)
+        UC17(Kiezen van taal)
+
+        %% KEUKEN use cases
+        UC18(Aanpassen van orderstatus)
+        UC19(Aanpassen van bereidingstijd)
+
+        %% Gedeelde UC
+        UC20(Verifiëren van betaling)
+
+        %% --- Relaties tussen use cases ---
+
+        %% Bestelling flow: klant bestelt → keuken bereidt → ober bezorgt
+        UC2 -.->|«include»| UC5
+        UC2 -->|triggert| UC18
+        UC18 -->|triggert| UC10
+        UC18 -->|triggert| UC11
+
+        %% Betaling flow
+        UC3 -.->|«include»| UC20
+        UC3 -->|genereert| UC15
+
+        %% Menu flow
+        UC1 -.->|«include»| UC4
+        UC4 -.->|«include»| UC6
+
+        %% Voorraad flow: keuken past aan → admin monitort
+        UC13 -->|beïnvloedt| UC14
+        UC19 -->|beïnvloedt| UC14
+
+        %% Orderstatus flow: keuken past aan → ober volgt op → admin monitort
+        UC18 -->|zichtbaar in| UC9
+        UC14 -->|basis voor| UC15
+
+        %% Accounts & sparen
+        UC5 -.->|«include»| UC12
+        UC8 -.->|«extend»| UC5
+
+        %% Recensie vereist inloggen
+        UC7 -.->|«include»| UC5
+
+        %% Taal geldt voor iedereen
+        UC17 -.->|«extend»| UC1
+        UC17 -.->|«extend»| UC2
+
+        %% Bereidingstijd beïnvloedt orderstatus
+        UC19 -->|beïnvloedt| UC18
+
+    end
+
+    %% Klant associaties
+    Klant --> UC1
+    Klant --> UC2
+    Klant --> UC3
+    Klant --> UC4
+    Klant --> UC5
+    Klant --> UC6
+    Klant --> UC7
+    Klant --> UC8
+
+    %% Ober associaties
+    Ober --> UC9
+    Ober --> UC10
+    Ober --> UC11
+
+    %% Admin associaties
+    Admin --> UC12
+    Admin --> UC13
+    Admin --> UC14
+    Admin --> UC15
+    Admin --> UC16
+    Admin --> UC17
+
+    %% Keuken/Bar associaties
+    Keuken --> UC14
+    Keuken --> UC18
+    Keuken --> UC19
