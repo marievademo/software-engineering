@@ -1,0 +1,30 @@
+flowchart TB
+    A(["Start: Klant opent profiel"]) --> B["Profieloverzicht tonen"]
+    B --> C{"Actie kiezen"}
+    C -- Allergieën beheren --> D["Huidig allergieënprofiel tonen"]
+    D --> E{"Allergie toevoegen of verwijderen?"}
+    E -- Toevoegen --> F["Allergie selecteren uit lijst"]
+    F --> G["user.c: Allergie opslaan in profiel"]
+    G --> H["Bevestiging tonen"]
+    H --> I["Allergieënlijst doorsturen naar menu.c"]
+    I --> J["Menu filteren op allergieën bij volgend bezoek"]
+    J --> B
+    E -- Verwijderen --> K["Allergie selecteren om te verwijderen"]
+    K --> L["user.c: Allergie verwijderen uit profiel"]
+    L --> H
+    C -- Taalvoorkeur instellen --> M["Taal kiezen: NL, FR, EN, ..."]
+    M --> N["Taalvoorkeur opslaan"]
+    N --> O["App herladen in gekozen taal"]
+    O --> B
+    C -- Bestelhistorie bekijken --> P["Historieoverzicht ophalen"]
+    P --> Q["Lijst van vroegere bestellingen tonen"]
+    Q --> R{"Bestelling\nopnieuw plaatsen?"}
+    R -- Nee --> B
+    R -- Ja --> S["Bestelling opnieuw aanmaken"]
+    S --> T{"Allergieëncheck: conflict met profiel?"}
+    T -- Conflict --> U["Waarschuwing tonen aan klant"]
+    U --> V{"Toch doorgaan?"}
+    V -- Nee --> Q
+    V -- Ja --> W["Bestelling bevestigen"]
+    T -- Geen conflict --> W
+    W --> X(["Einde: naar betalingsflow"])

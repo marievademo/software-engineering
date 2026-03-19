@@ -1,0 +1,27 @@
+flowchart TB
+    A(["Start: Klant bekijkt menu"]) --> B["Gerecht selecteren"]
+    B --> C{"Aanpassingen toevoegen?"}
+    C -- Ja --> D["Aanpassing invoeren bv. geen look"]
+    C -- Nee --> E["Gerecht toevoegen aan winkelmandje"]
+    D --> E
+    E --> F{"Meer gerechten toevoegen?"}
+    F -- Ja --> B
+    F -- Nee --> G["Winkelmandje tonen"]
+    G --> H{"Bestelling bevestigen?"}
+    H -- Aanpassen --> I["Item verwijderen of wijzigen"]
+    I --> G
+    H -- Bevestigen --> J["order.c: Bestelling opslaan in systeem"]
+    J --> K["order.c: Bestellings-ID + tijdstip aanmaken"]
+    K --> L["kitchen.c: Bestelling doorsturen naar keuken"] & M["payment.c: Totaalbedrag berekenen"]
+    L --> N["Keuken verwerkt bestelling"]
+    N --> O["kitchen.c: Status → In bereiding"]
+    O --> P["order.c: Statusupdate ontvangen"]
+    P --> Q["Klantscherm toont: In bereiding"]
+    Q --> R["Keuken voltooit bereiding"]
+    R --> S["kitchen.c: Status → Klaar"]
+    S --> T["order.c: Statusupdate ontvangen"]
+    T --> U["Klantscherm toont: Klaar"]
+    U --> V["Levering aan tafel"]
+    V --> W["order.c: Status → Geleverd"]
+    W --> X["order.c: Bestellingshistorie opslaan via user.c"]
+    X --> Y(["Einde"])
