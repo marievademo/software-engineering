@@ -1,0 +1,60 @@
+stateDiagram-v2
+
+    [*] --> NietIngelogd
+
+    NietIngelogd --> Registreren : Geen account
+    NietIngelogd --> Inloggen : Heeft account
+
+    Registreren --> WachtenOpVerificatie : Account aangemaakt
+    WachtenOpVerificatie --> Inloggen : Email geverifieerd
+
+    Inloggen --> InloggenMislukt : Fout wachtwoord
+    InloggenMislukt --> Inloggen : Opnieuw proberen
+    InloggenMislukt --> Geblokkeerd : 5 mislukte pogingen
+    Geblokkeerd --> Inloggen : Blokkering opgeheven
+
+    Inloggen --> IngelogdKlant : Rol is klant
+    Inloggen --> IngelogdAdmin : Rol is admin
+    Inloggen --> IngelogdKeuken : Rol is keuken
+
+    state IngelogdKlant {
+        [*] --> MenuBekijken
+        MenuBekijken --> BestellingSamenstellen : Item toegevoegd
+        BestellingSamenstellen --> MenuBekijken : Meer items toevoegen
+        BestellingSamenstellen --> BestellingBevestigd : Bestelling geplaatst
+        BestellingBevestigd --> BetalingInVerwerking : Klant betaalt
+        BetalingInVerwerking --> BetalingGeslaagd : Provider bevestigt
+        BetalingInVerwerking --> BetalingMislukt : Provider weigert
+        BetalingMislukt --> BetalingInVerwerking : Opnieuw proberen
+        BetalingGeslaagd --> BestellingInBereiding : Keuken ontvangt bestelling
+        BestellingInBereiding --> BestellingKlaar : Keuken zet status klaar
+        BestellingKlaar --> BestellingGeleverd : Geleverd aan tafel
+        BestellingGeleverd --> [*]
+    }
+
+    state IngelogdAdmin {
+        [*] --> Dashboard
+        Dashboard --> MenuBeheren : Menu aanpassen
+        Dashboard --> RapportenBekijken : Rapport bekijken
+        Dashboard --> AccountsBeheren : Accounts beheren
+        Dashboard --> OpeningsuurAanpassen : Uren aanpassen
+        MenuBeheren --> Dashboard : Opgeslagen
+        RapportenBekijken --> Dashboard : Gesloten
+        AccountsBeheren --> Dashboard : Opgeslagen
+        OpeningsuurAanpassen --> Dashboard : Opgeslagen
+    }
+
+    state IngelogdKeuken {
+        [*] --> Orderoverzicht
+        Orderoverzicht --> BestellingVerwerken : Nieuwe bestelling
+        BestellingVerwerken --> Orderoverzicht : Verwerkt
+    }
+
+    IngelogdKlant --> NietIngelogd : Uitloggen
+    IngelogdAdmin --> NietIngelogd : Uitloggen
+    IngelogdKeuken --> NietIngelogd : Uitloggen
+
+    IngelogdKlant --> SessieVerlopen : 30 min inactiviteit
+    IngelogdAdmin --> SessieVerlopen : 30 min inactiviteit
+    IngelogdKeuken --> SessieVerlopen : 30 min inactiviteit
+    SessieVerlopen --> NietIngelogd : Sessie ongeldig
