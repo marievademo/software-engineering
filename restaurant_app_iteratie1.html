@@ -1,0 +1,2416 @@
+<!DOCTYPE html>
+<html lang="nl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Bistro Tafel — Restaurant Orderingssysteem</title>
+<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,600;0,700;1,400&family=DM+Sans:wght@300;400;500;600&display=swap" rel="stylesheet">
+<style>
+:root {
+  --cream: #F8F4EE;
+  --warm-white: #FDFBF7;
+  --charcoal: #1C1C1A;
+  --dark: #2A2825;
+  --olive: #5C6B3A;
+  --olive-light: #7A8C4E;
+  --olive-pale: #EEF2E6;
+  --terracotta: #C4622D;
+  --terracotta-light: #E8825A;
+  --terracotta-pale: #FAF0EA;
+  --gold: #C9963C;
+  --gold-pale: #FBF5E8;
+  --text-main: #2A2825;
+  --text-muted: #7A776F;
+  --text-light: #B0ACA5;
+  --border: #E8E2D9;
+  --border-dark: #C8C0B5;
+  --shadow-sm: 0 2px 8px rgba(44,40,37,0.08);
+  --shadow-md: 0 6px 24px rgba(44,40,37,0.12);
+  --shadow-lg: 0 12px 48px rgba(44,40,37,0.18);
+  --radius: 12px;
+  --radius-sm: 8px;
+  --radius-lg: 20px;
+}
+
+* { box-sizing: border-box; margin: 0; padding: 0; }
+
+body {
+  font-family: 'DM Sans', sans-serif;
+  background: var(--cream);
+  color: var(--text-main);
+  min-height: 100vh;
+}
+
+/* ── SCREEN SYSTEM ── */
+.screen { display: none; min-height: 100vh; flex-direction: column; animation: fadeIn 0.3s ease; }
+.screen.active { display: flex; }
+@keyframes fadeIn { from { opacity: 0; transform: translateY(6px); } to { opacity: 1; transform: translateY(0); } }
+
+/* ── SHARED HEADER ── */
+.app-header {
+  background: var(--warm-white);
+  border-bottom: 1px solid var(--border);
+  padding: 0 20px;
+  height: 64px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  position: sticky;
+  top: 0;
+  z-index: 100;
+  box-shadow: var(--shadow-sm);
+}
+.logo {
+  font-family: 'Playfair Display', serif;
+  font-size: 22px;
+  font-weight: 700;
+  color: var(--terracotta);
+  letter-spacing: -0.3px;
+}
+.logo span { color: var(--olive); }
+.table-badge {
+  background: var(--gold-pale);
+  border: 1px solid var(--gold);
+  color: var(--gold);
+  font-size: 12px;
+  font-weight: 600;
+  padding: 4px 12px;
+  border-radius: 20px;
+  letter-spacing: 0.3px;
+}
+.cart-btn {
+  position: relative;
+  background: var(--terracotta);
+  color: white;
+  border: none;
+  border-radius: var(--radius-sm);
+  width: 42px;
+  height: 42px;
+  cursor: pointer;
+  font-size: 18px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: background 0.2s;
+}
+.cart-btn:hover { background: var(--terracotta-light); }
+.cart-count {
+  position: absolute;
+  top: -6px; right: -6px;
+  background: var(--olive);
+  color: white;
+  font-size: 10px;
+  font-weight: 700;
+  width: 18px; height: 18px;
+  border-radius: 50%;
+  display: flex; align-items: center; justify-content: center;
+  border: 2px solid white;
+}
+
+/* ── BOTTOM NAV ── */
+.bottom-nav {
+  position: fixed;
+  bottom: 0; left: 0; right: 0;
+  background: var(--warm-white);
+  border-top: 1px solid var(--border);
+  display: flex;
+  z-index: 100;
+  box-shadow: 0 -4px 20px rgba(44,40,37,0.08);
+}
+.nav-item {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 10px 0;
+  cursor: pointer;
+  border: none;
+  background: transparent;
+  color: var(--text-light);
+  font-family: 'DM Sans', sans-serif;
+  font-size: 10px;
+  font-weight: 500;
+  gap: 3px;
+  transition: color 0.2s;
+}
+.nav-item.active { color: var(--terracotta); }
+.nav-item svg { width: 20px; height: 20px; }
+.nav-item .nav-dot {
+  position: relative;
+}
+.nav-item .nav-dot::after {
+  content: attr(data-count);
+  position: absolute;
+  top: -8px; right: -10px;
+  background: var(--terracotta);
+  color: white;
+  font-size: 9px;
+  font-weight: 700;
+  min-width: 14px; height: 14px;
+  border-radius: 7px;
+  display: flex; align-items: center; justify-content: center;
+  padding: 0 3px;
+}
+
+/* ── CONTENT AREA ── */
+.content { flex: 1; padding-bottom: 70px; }
+
+/* ── BUTTONS ── */
+.btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  border: none;
+  border-radius: var(--radius-sm);
+  font-family: 'DM Sans', sans-serif;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s;
+  padding: 12px 20px;
+  font-size: 14px;
+}
+.btn-primary {
+  background: var(--terracotta);
+  color: white;
+}
+.btn-primary:hover { background: var(--terracotta-light); transform: translateY(-1px); box-shadow: var(--shadow-md); }
+.btn-secondary {
+  background: transparent;
+  color: var(--terracotta);
+  border: 2px solid var(--terracotta);
+}
+.btn-secondary:hover { background: var(--terracotta-pale); }
+.btn-olive {
+  background: var(--olive);
+  color: white;
+}
+.btn-olive:hover { background: var(--olive-light); }
+.btn-full { width: 100%; }
+.btn-lg { padding: 16px 24px; font-size: 16px; border-radius: var(--radius); }
+.btn-sm { padding: 8px 14px; font-size: 12px; }
+
+/* ── FORM ELEMENTS ── */
+.form-group { margin-bottom: 16px; }
+.form-label {
+  display: block;
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--text-muted);
+  margin-bottom: 6px;
+  letter-spacing: 0.3px;
+  text-transform: uppercase;
+}
+.form-input {
+  width: 100%;
+  padding: 12px 16px;
+  border: 1.5px solid var(--border);
+  border-radius: var(--radius-sm);
+  font-family: 'DM Sans', sans-serif;
+  font-size: 15px;
+  background: white;
+  color: var(--text-main);
+  outline: none;
+  transition: border-color 0.2s;
+}
+.form-input:focus { border-color: var(--terracotta); }
+
+/* ── CARDS ── */
+.card {
+  background: white;
+  border-radius: var(--radius);
+  box-shadow: var(--shadow-sm);
+  border: 1px solid var(--border);
+}
+
+/* ── SECTION HEADER ── */
+.section-header {
+  padding: 20px 20px 12px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+.section-title {
+  font-family: 'Playfair Display', serif;
+  font-size: 24px;
+  font-weight: 700;
+  color: var(--dark);
+}
+.section-subtitle {
+  font-size: 14px;
+  color: var(--text-muted);
+  margin-top: 2px;
+}
+
+/* ─────────────────────────────────────── */
+/* ──       SCREEN 1: LOGIN              ── */
+/* ─────────────────────────────────────── */
+#screen-login {
+  background: linear-gradient(160deg, #2A2825 0%, #3d3830 50%, #4a3f35 100%);
+  align-items: center;
+  justify-content: center;
+  padding: 40px 24px;
+}
+.login-card {
+  background: var(--warm-white);
+  border-radius: 24px;
+  padding: 40px 32px;
+  width: 100%;
+  max-width: 420px;
+  box-shadow: var(--shadow-lg);
+}
+.login-logo {
+  text-align: center;
+  margin-bottom: 32px;
+}
+.login-logo .logo-mark {
+  font-family: 'Playfair Display', serif;
+  font-size: 36px;
+  font-weight: 700;
+  color: var(--terracotta);
+  line-height: 1;
+  display: block;
+}
+.login-logo .logo-sub {
+  font-size: 13px;
+  color: var(--text-muted);
+  letter-spacing: 2px;
+  text-transform: uppercase;
+  margin-top: 6px;
+  display: block;
+}
+.login-tabs {
+  display: flex;
+  gap: 0;
+  background: var(--cream);
+  border-radius: var(--radius-sm);
+  padding: 4px;
+  margin-bottom: 28px;
+}
+.login-tab {
+  flex: 1;
+  padding: 10px;
+  border: none;
+  background: transparent;
+  font-family: 'DM Sans', sans-serif;
+  font-size: 14px;
+  font-weight: 500;
+  cursor: pointer;
+  border-radius: 6px;
+  color: var(--text-muted);
+  transition: all 0.2s;
+}
+.login-tab.active {
+  background: white;
+  color: var(--terracotta);
+  font-weight: 600;
+  box-shadow: var(--shadow-sm);
+}
+.role-selector {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 8px;
+  margin-bottom: 20px;
+}
+.role-btn {
+  padding: 12px 8px;
+  border: 2px solid var(--border);
+  border-radius: var(--radius-sm);
+  background: white;
+  cursor: pointer;
+  text-align: center;
+  font-family: 'DM Sans', sans-serif;
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--text-muted);
+  transition: all 0.2s;
+}
+.role-btn .role-icon { font-size: 22px; display: block; margin-bottom: 4px; }
+.role-btn.active { border-color: var(--terracotta); color: var(--terracotta); background: var(--terracotta-pale); }
+.divider {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  color: var(--text-light);
+  font-size: 12px;
+  margin: 20px 0;
+}
+.divider::before, .divider::after {
+  content: '';
+  flex: 1;
+  height: 1px;
+  background: var(--border);
+}
+.forgot-link {
+  text-align: right;
+  margin-top: -10px;
+  margin-bottom: 20px;
+}
+.link-text {
+  color: var(--terracotta);
+  font-size: 13px;
+  cursor: pointer;
+  background: none;
+  border: none;
+  font-family: 'DM Sans', sans-serif;
+  text-decoration: underline;
+}
+.error-msg {
+  background: #FEF2F2;
+  border: 1px solid #FCA5A5;
+  color: #DC2626;
+  padding: 10px 14px;
+  border-radius: var(--radius-sm);
+  font-size: 13px;
+  margin-bottom: 16px;
+  display: none;
+}
+.error-msg.show { display: block; }
+.blocked-msg {
+  background: #FFF7ED;
+  border: 1px solid #FCD34D;
+  color: #92400E;
+  padding: 12px 14px;
+  border-radius: var(--radius-sm);
+  font-size: 13px;
+  margin-bottom: 16px;
+  display: none;
+}
+
+/* ─────────────────────────────────────── */
+/* ──       SCREEN 2: HOME               ── */
+/* ─────────────────────────────────────── */
+.hero-banner {
+  height: 220px;
+  background: linear-gradient(135deg, #2A2825 0%, #5C6B3A 100%);
+  position: relative;
+  overflow: hidden;
+  display: flex;
+  align-items: flex-end;
+  padding: 24px;
+}
+.hero-banner::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: url("data:image/svg+xml,%3Csvg width='60' height='60' viewBox='0 0 60 60' xmlns='http://www.w3.org/2000/svg'%3E%3Cg fill='none' fill-rule='evenodd'%3E%3Cg fill='%23ffffff' fill-opacity='0.04'%3E%3Cpath d='M36 34v-4h-2v4h-4v2h4v4h2v-4h4v-2h-4zm0-30V0h-2v4h-4v2h4v4h2V6h4V4h-4zM6 34v-4H4v4H0v2h4v4h2v-4h4v-2H6zM6 4V0H4v4H0v2h4v4h2V6h4V4H6z'/%3E%3C/g%3E%3C/g%3E%3C/svg%3E");
+}
+.hero-content { position: relative; z-index: 1; }
+.hero-welcome {
+  font-size: 13px;
+  color: rgba(255,255,255,0.6);
+  letter-spacing: 1.5px;
+  text-transform: uppercase;
+  margin-bottom: 6px;
+}
+.hero-title {
+  font-family: 'Playfair Display', serif;
+  font-size: 32px;
+  font-weight: 700;
+  color: white;
+  line-height: 1.2;
+  margin-bottom: 12px;
+}
+.hero-cta {
+  background: var(--terracotta);
+  color: white;
+  padding: 10px 20px;
+  border-radius: 8px;
+  font-size: 14px;
+  font-weight: 600;
+  border: none;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+.hero-cta:hover { background: var(--terracotta-light); transform: scale(1.02); }
+.hero-badge {
+  position: absolute;
+  top: 24px; right: 24px;
+  background: var(--gold);
+  color: white;
+  font-size: 13px;
+  font-weight: 700;
+  padding: 8px 14px;
+  border-radius: 20px;
+}
+
+.category-pills {
+  display: flex;
+  gap: 8px;
+  padding: 16px 20px;
+  overflow-x: auto;
+  scrollbar-width: none;
+}
+.category-pills::-webkit-scrollbar { display: none; }
+.pill {
+  flex-shrink: 0;
+  padding: 8px 16px;
+  border-radius: 20px;
+  font-size: 13px;
+  font-weight: 500;
+  cursor: pointer;
+  border: none;
+  transition: all 0.2s;
+  background: white;
+  color: var(--text-muted);
+  border: 1.5px solid var(--border);
+}
+.pill.active {
+  background: var(--terracotta);
+  color: white;
+  border-color: var(--terracotta);
+}
+
+.product-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px;
+  padding: 0 16px 16px;
+}
+.product-card {
+  background: white;
+  border-radius: var(--radius);
+  overflow: hidden;
+  box-shadow: var(--shadow-sm);
+  border: 1px solid var(--border);
+  transition: transform 0.2s, box-shadow 0.2s;
+}
+.product-card:hover { transform: translateY(-2px); box-shadow: var(--shadow-md); }
+.product-img {
+  height: 100px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 42px;
+}
+.product-info { padding: 10px; }
+.product-name {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--dark);
+  margin-bottom: 3px;
+  line-height: 1.3;
+}
+.product-desc {
+  font-size: 11px;
+  color: var(--text-muted);
+  margin-bottom: 8px;
+  line-height: 1.4;
+}
+.product-footer {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+.product-price {
+  font-size: 14px;
+  font-weight: 700;
+  color: var(--terracotta);
+}
+.add-btn {
+  background: var(--terracotta);
+  color: white;
+  border: none;
+  border-radius: 6px;
+  width: 28px; height: 28px;
+  font-size: 18px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.2s;
+  line-height: 1;
+}
+.add-btn:hover { background: var(--olive); transform: scale(1.1); }
+.add-btn.added { background: var(--olive); animation: pop 0.2s; }
+@keyframes pop { 0% { transform: scale(1); } 50% { transform: scale(1.3); } 100% { transform: scale(1); } }
+
+/* ─────────────────────────────────────── */
+/* ──       SCREEN 3: MENU               ── */
+/* ─────────────────────────────────────── */
+.search-bar {
+  padding: 12px 20px;
+  display: flex;
+  gap: 10px;
+}
+.search-input {
+  flex: 1;
+  padding: 11px 16px;
+  border: 1.5px solid var(--border);
+  border-radius: var(--radius-sm);
+  font-family: 'DM Sans', sans-serif;
+  font-size: 14px;
+  outline: none;
+  background: white;
+  transition: border-color 0.2s;
+}
+.search-input:focus { border-color: var(--terracotta); }
+.filter-btn {
+  background: var(--olive-pale);
+  border: 1.5px solid var(--olive);
+  color: var(--olive);
+  border-radius: var(--radius-sm);
+  width: 44px;
+  cursor: pointer;
+  font-size: 16px;
+  display: flex; align-items: center; justify-content: center;
+}
+
+.menu-category { margin-bottom: 8px; }
+.menu-category-title {
+  font-family: 'Playfair Display', serif;
+  font-size: 18px;
+  font-weight: 600;
+  color: var(--dark);
+  padding: 12px 20px 8px;
+  border-bottom: 2px solid var(--border);
+  margin-bottom: 0;
+}
+
+.menu-item {
+  display: flex;
+  gap: 12px;
+  padding: 14px 20px;
+  background: white;
+  border-bottom: 1px solid var(--border);
+  align-items: center;
+  transition: background 0.15s;
+}
+.menu-item:hover { background: var(--cream); }
+.menu-item-img {
+  width: 72px; height: 72px;
+  border-radius: var(--radius-sm);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 36px;
+  flex-shrink: 0;
+  background: var(--cream);
+}
+.menu-item-info { flex: 1; min-width: 0; }
+.menu-item-name {
+  font-size: 15px;
+  font-weight: 600;
+  color: var(--dark);
+  margin-bottom: 3px;
+}
+.menu-item-desc {
+  font-size: 12px;
+  color: var(--text-muted);
+  line-height: 1.4;
+  margin-bottom: 6px;
+}
+.menu-item-tags {
+  display: flex;
+  gap: 4px;
+  flex-wrap: wrap;
+}
+.tag {
+  font-size: 10px;
+  padding: 2px 8px;
+  border-radius: 10px;
+  font-weight: 500;
+}
+.tag-veg { background: #DCFCE7; color: #16A34A; }
+.tag-spicy { background: #FEE2E2; color: #DC2626; }
+.tag-popular { background: var(--gold-pale); color: var(--gold); }
+.menu-item-right {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 8px;
+  flex-shrink: 0;
+}
+.menu-item-price {
+  font-size: 16px;
+  font-weight: 700;
+  color: var(--terracotta);
+}
+
+.sticky-cart-bar {
+  position: fixed;
+  bottom: 64px; left: 0; right: 0;
+  background: var(--olive);
+  color: white;
+  padding: 12px 20px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+  transform: translateY(100%);
+  transition: transform 0.3s ease;
+  z-index: 90;
+  border-radius: 0;
+}
+.sticky-cart-bar.show { transform: translateY(0); }
+.sticky-cart-bar:hover { background: #4a5830; }
+
+/* ─────────────────────────────────────── */
+/* ──       SCREEN 4: WINKELMANDJE       ── */
+/* ─────────────────────────────────────── */
+.table-indicator {
+  background: var(--gold-pale);
+  border: 1px solid var(--gold);
+  margin: 16px 20px;
+  border-radius: var(--radius-sm);
+  padding: 12px 16px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+.table-indicator-info {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+.table-number-big {
+  background: var(--gold);
+  color: white;
+  font-size: 18px;
+  font-weight: 700;
+  width: 42px; height: 42px;
+  border-radius: 8px;
+  display: flex; align-items: center; justify-content: center;
+  font-family: 'Playfair Display', serif;
+}
+.table-label { font-size: 13px; color: var(--text-muted); }
+.table-name { font-size: 16px; font-weight: 600; color: var(--dark); }
+
+.cart-item {
+  display: flex;
+  gap: 12px;
+  padding: 14px 20px;
+  background: white;
+  border-bottom: 1px solid var(--border);
+  align-items: center;
+}
+.cart-item-img {
+  width: 56px; height: 56px;
+  border-radius: var(--radius-sm);
+  background: var(--cream);
+  display: flex; align-items: center; justify-content: center;
+  font-size: 28px;
+  flex-shrink: 0;
+}
+.cart-item-info { flex: 1; }
+.cart-item-name { font-size: 14px; font-weight: 600; margin-bottom: 2px; }
+.cart-item-price { font-size: 13px; color: var(--text-muted); }
+.qty-control {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  background: var(--cream);
+  border-radius: var(--radius-sm);
+  padding: 4px;
+}
+.qty-btn {
+  width: 28px; height: 28px;
+  border: none;
+  border-radius: 6px;
+  background: white;
+  color: var(--terracotta);
+  font-size: 16px;
+  font-weight: 700;
+  cursor: pointer;
+  display: flex; align-items: center; justify-content: center;
+  transition: all 0.15s;
+  box-shadow: var(--shadow-sm);
+}
+.qty-btn:hover { background: var(--terracotta); color: white; }
+.qty-btn:disabled { opacity: 0.4; cursor: not-allowed; }
+.qty-num { font-size: 14px; font-weight: 700; min-width: 20px; text-align: center; }
+
+.remarks-area {
+  margin: 16px 20px;
+}
+.remarks-input {
+  width: 100%;
+  padding: 12px 16px;
+  border: 1.5px solid var(--border);
+  border-radius: var(--radius-sm);
+  font-family: 'DM Sans', sans-serif;
+  font-size: 14px;
+  resize: none;
+  outline: none;
+  background: white;
+  transition: border-color 0.2s;
+}
+.remarks-input:focus { border-color: var(--olive); }
+
+.price-summary {
+  margin: 0 20px 16px;
+  background: white;
+  border-radius: var(--radius);
+  padding: 16px;
+  border: 1px solid var(--border);
+}
+.price-row {
+  display: flex;
+  justify-content: space-between;
+  font-size: 14px;
+  padding: 4px 0;
+  color: var(--text-muted);
+}
+.price-row.total {
+  font-size: 17px;
+  font-weight: 700;
+  color: var(--dark);
+  border-top: 2px solid var(--border);
+  margin-top: 8px;
+  padding-top: 12px;
+}
+.empty-cart {
+  text-align: center;
+  padding: 60px 20px;
+}
+.empty-cart-icon { font-size: 64px; margin-bottom: 16px; opacity: 0.4; }
+.empty-cart-text { font-size: 16px; color: var(--text-muted); margin-bottom: 16px; }
+
+.place-order-bar {
+  padding: 16px 20px;
+  background: var(--warm-white);
+  border-top: 1px solid var(--border);
+  position: sticky;
+  bottom: 64px;
+}
+
+/* ─────────────────────────────────────── */
+/* ──    SCREEN 5: BETALING              ── */
+/* ─────────────────────────────────────── */
+.payment-section { padding: 20px; }
+.payment-method {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  padding: 16px;
+  background: white;
+  border: 2px solid var(--border);
+  border-radius: var(--radius-sm);
+  cursor: pointer;
+  margin-bottom: 10px;
+  transition: all 0.2s;
+}
+.payment-method.selected {
+  border-color: var(--terracotta);
+  background: var(--terracotta-pale);
+}
+.payment-method-icon { font-size: 28px; }
+.payment-method-info { flex: 1; }
+.payment-method-name { font-size: 15px; font-weight: 600; }
+.payment-method-desc { font-size: 12px; color: var(--text-muted); }
+.payment-radio {
+  width: 18px; height: 18px;
+  border-radius: 50%;
+  border: 2px solid var(--border-dark);
+  display: flex; align-items: center; justify-content: center;
+  transition: all 0.2s;
+}
+.payment-method.selected .payment-radio {
+  border-color: var(--terracotta);
+  background: var(--terracotta);
+}
+.payment-method.selected .payment-radio::after {
+  content: '';
+  width: 6px; height: 6px;
+  background: white;
+  border-radius: 50%;
+}
+.order-summary-mini {
+  background: white;
+  border-radius: var(--radius);
+  padding: 16px;
+  margin-bottom: 20px;
+  border: 1px solid var(--border);
+}
+.order-summary-mini-title {
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--text-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  margin-bottom: 12px;
+}
+.success-screen {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 60px 32px;
+  text-align: center;
+  flex: 1;
+}
+.success-icon {
+  width: 80px; height: 80px;
+  background: var(--olive-pale);
+  border-radius: 50%;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 40px;
+  margin-bottom: 24px;
+  animation: bounceIn 0.5s;
+}
+@keyframes bounceIn {
+  0% { transform: scale(0); }
+  60% { transform: scale(1.15); }
+  100% { transform: scale(1); }
+}
+.success-title {
+  font-family: 'Playfair Display', serif;
+  font-size: 28px;
+  font-weight: 700;
+  color: var(--olive);
+  margin-bottom: 12px;
+}
+.success-text { color: var(--text-muted); font-size: 15px; line-height: 1.6; margin-bottom: 24px; }
+.order-number {
+  background: var(--gold-pale);
+  border: 1px solid var(--gold);
+  color: var(--gold);
+  font-size: 22px;
+  font-weight: 700;
+  padding: 16px 32px;
+  border-radius: var(--radius);
+  margin-bottom: 32px;
+  font-family: 'Playfair Display', serif;
+}
+
+/* ─────────────────────────────────────── */
+/* ──    SCREEN 6: ADMIN DASHBOARD       ── */
+/* ─────────────────────────────────────── */
+.admin-header {
+  background: var(--dark);
+  color: white;
+  padding: 16px 20px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+.admin-title {
+  font-family: 'Playfair Display', serif;
+  font-size: 20px;
+  font-weight: 700;
+}
+.admin-subtitle { font-size: 12px; color: rgba(255,255,255,0.5); }
+.admin-nav {
+  background: white;
+  border-bottom: 1px solid var(--border);
+  display: flex;
+  overflow-x: auto;
+  scrollbar-width: none;
+}
+.admin-nav::-webkit-scrollbar { display: none; }
+.admin-nav-item {
+  flex-shrink: 0;
+  padding: 12px 20px;
+  font-size: 13px;
+  font-weight: 500;
+  cursor: pointer;
+  color: var(--text-muted);
+  border-bottom: 3px solid transparent;
+  transition: all 0.2s;
+  white-space: nowrap;
+  border: none;
+  background: transparent;
+  font-family: 'DM Sans', sans-serif;
+}
+.admin-nav-item.active {
+  color: var(--terracotta);
+  border-bottom-color: var(--terracotta);
+  font-weight: 600;
+}
+.admin-panel { display: none; padding: 16px 20px; }
+.admin-panel.active { display: block; }
+.stats-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px;
+  margin-bottom: 20px;
+}
+.stat-card {
+  background: white;
+  border-radius: var(--radius);
+  padding: 16px;
+  border: 1px solid var(--border);
+}
+.stat-value {
+  font-family: 'Playfair Display', serif;
+  font-size: 28px;
+  font-weight: 700;
+  color: var(--terracotta);
+  line-height: 1;
+  margin-bottom: 4px;
+}
+.stat-label { font-size: 12px; color: var(--text-muted); }
+.stat-change { font-size: 11px; color: var(--olive); font-weight: 600; margin-top: 4px; }
+
+.admin-list-item {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 14px;
+  background: white;
+  border-radius: var(--radius-sm);
+  border: 1px solid var(--border);
+  margin-bottom: 8px;
+}
+.admin-list-item-icon { font-size: 28px; flex-shrink: 0; }
+.admin-list-item-info { flex: 1; }
+.admin-list-item-name { font-size: 14px; font-weight: 600; }
+.admin-list-item-sub { font-size: 12px; color: var(--text-muted); }
+.toggle-switch {
+  width: 44px; height: 24px;
+  background: var(--border-dark);
+  border-radius: 12px;
+  position: relative;
+  cursor: pointer;
+  transition: background 0.2s;
+  border: none;
+  flex-shrink: 0;
+}
+.toggle-switch.on { background: var(--olive); }
+.toggle-switch::after {
+  content: '';
+  position: absolute;
+  top: 2px; left: 2px;
+  width: 20px; height: 20px;
+  background: white;
+  border-radius: 50%;
+  transition: left 0.2s;
+  box-shadow: 0 1px 4px rgba(0,0,0,0.2);
+}
+.toggle-switch.on::after { left: 22px; }
+
+.order-table {
+  width: 100%;
+  border-collapse: collapse;
+  background: white;
+  border-radius: var(--radius);
+  overflow: hidden;
+  border: 1px solid var(--border);
+}
+.order-table th {
+  background: var(--cream);
+  padding: 10px 14px;
+  font-size: 11px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  color: var(--text-muted);
+  text-align: left;
+}
+.order-table td {
+  padding: 12px 14px;
+  font-size: 13px;
+  border-top: 1px solid var(--border);
+}
+.status-badge {
+  display: inline-block;
+  padding: 3px 10px;
+  border-radius: 10px;
+  font-size: 11px;
+  font-weight: 600;
+}
+.status-geplaatst { background: #EFF6FF; color: #3B82F6; }
+.status-bereiding { background: #FFF7ED; color: #EA580C; }
+.status-klaar { background: #F0FDF4; color: #16A34A; }
+.status-geleverd { background: #F8F4EE; color: #6B7280; }
+
+.opening-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 12px 0;
+  border-bottom: 1px solid var(--border);
+}
+.opening-day { font-size: 14px; font-weight: 600; }
+.opening-time { font-size: 13px; color: var(--text-muted); }
+
+/* ─────────────────────────────────────── */
+/* ──    SCREEN 7: KEUKEN/BAR            ── */
+/* ─────────────────────────────────────── */
+.kitchen-header {
+  background: var(--charcoal);
+  color: white;
+  padding: 16px 20px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+.kitchen-title {
+  font-family: 'Playfair Display', serif;
+  font-size: 22px;
+  font-weight: 700;
+  color: var(--terracotta-light);
+}
+.kitchen-time {
+  font-size: 28px;
+  font-weight: 700;
+  font-family: 'Playfair Display', serif;
+  color: white;
+  letter-spacing: -1px;
+}
+.kitchen-date { font-size: 12px; color: rgba(255,255,255,0.4); text-align: right; }
+
+.kitchen-columns {
+  display: grid;
+  grid-template-columns: 1fr 1fr 1fr;
+  gap: 12px;
+  padding: 16px;
+  overflow-x: auto;
+  align-items: start;
+}
+
+.kitchen-column-header {
+  font-size: 11px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+  padding: 8px 12px;
+  border-radius: 6px;
+  margin-bottom: 10px;
+  text-align: center;
+}
+.col-new { background: #EFF6FF; color: #3B82F6; }
+.col-progress { background: #FFF7ED; color: #EA580C; }
+.col-ready { background: #F0FDF4; color: #16A34A; }
+
+.kitchen-order-card {
+  background: white;
+  border-radius: var(--radius);
+  border: 2px solid var(--border);
+  overflow: hidden;
+  margin-bottom: 10px;
+  transition: all 0.2s;
+}
+.kitchen-order-card.new-order {
+  border-color: #93C5FD;
+  animation: newOrder 2s ease infinite;
+}
+@keyframes newOrder {
+  0%, 100% { box-shadow: 0 0 0 0 rgba(59,130,246,0.4); }
+  50% { box-shadow: 0 0 0 6px rgba(59,130,246,0); }
+}
+.kitchen-order-header {
+  padding: 10px 12px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  border-bottom: 1px solid var(--border);
+}
+.kitchen-table-num {
+  font-family: 'Playfair Display', serif;
+  font-size: 18px;
+  font-weight: 700;
+  color: var(--dark);
+}
+.kitchen-order-time {
+  font-size: 11px;
+  color: var(--text-muted);
+}
+.kitchen-order-items { padding: 10px 12px; }
+.kitchen-order-item {
+  font-size: 13px;
+  padding: 3px 0;
+  display: flex;
+  gap: 8px;
+  align-items: flex-start;
+}
+.kitchen-qty {
+  font-weight: 700;
+  color: var(--terracotta);
+  min-width: 20px;
+  font-size: 14px;
+}
+.kitchen-order-actions {
+  padding: 8px 12px;
+  border-top: 1px solid var(--border);
+  display: flex;
+  gap: 6px;
+}
+.kitchen-btn {
+  flex: 1;
+  padding: 8px;
+  border: none;
+  border-radius: 6px;
+  font-size: 11px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.15s;
+  font-family: 'DM Sans', sans-serif;
+}
+.kitchen-btn-start { background: #FFF7ED; color: #EA580C; border: 1px solid #FCD34D; }
+.kitchen-btn-start:hover { background: #EA580C; color: white; }
+.kitchen-btn-ready { background: #F0FDF4; color: #16A34A; border: 1px solid #86EFAC; }
+.kitchen-btn-ready:hover { background: #16A34A; color: white; }
+.kitchen-btn-deliver { background: var(--olive-pale); color: var(--olive); border: 1px solid var(--olive-light); }
+.kitchen-btn-deliver:hover { background: var(--olive); color: white; }
+
+/* ─────────────────────────────────────── */
+/* ──         PROFIEL SCHERM             ── */
+/* ─────────────────────────────────────── */
+.profile-header-section {
+  background: linear-gradient(135deg, var(--dark) 0%, var(--olive) 100%);
+  padding: 32px 24px;
+  color: white;
+  position: relative;
+  overflow: hidden;
+}
+.profile-avatar {
+  width: 70px; height: 70px;
+  background: rgba(255,255,255,0.2);
+  border-radius: 50%;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 32px;
+  margin-bottom: 12px;
+  border: 3px solid rgba(255,255,255,0.3);
+}
+.profile-name {
+  font-family: 'Playfair Display', serif;
+  font-size: 24px;
+  font-weight: 700;
+  margin-bottom: 4px;
+}
+.profile-email { font-size: 13px; color: rgba(255,255,255,0.6); }
+
+.profile-section { padding: 20px; }
+.profile-option {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  padding: 14px;
+  background: white;
+  border-radius: var(--radius-sm);
+  border: 1px solid var(--border);
+  margin-bottom: 8px;
+  cursor: pointer;
+  transition: background 0.15s;
+}
+.profile-option:hover { background: var(--cream); }
+.profile-option-icon {
+  font-size: 22px;
+  width: 40px; height: 40px;
+  background: var(--cream);
+  border-radius: 8px;
+  display: flex; align-items: center; justify-content: center;
+}
+.profile-option-info { flex: 1; }
+.profile-option-title { font-size: 14px; font-weight: 600; }
+.profile-option-sub { font-size: 12px; color: var(--text-muted); }
+.profile-option-arrow { color: var(--text-light); font-size: 16px; }
+
+.allergy-grid {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  padding: 16px;
+}
+.allergy-tag {
+  padding: 6px 14px;
+  border-radius: 20px;
+  font-size: 13px;
+  font-weight: 500;
+  background: var(--terracotta-pale);
+  color: var(--terracotta);
+  border: 1px solid var(--terracotta-light);
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  transition: all 0.15s;
+}
+.allergy-tag.active {
+  background: var(--terracotta);
+  color: white;
+}
+.allergy-tag:hover { transform: scale(1.05); }
+
+/* ── NOTIFICATION ── */
+.toast {
+  position: fixed;
+  bottom: 80px; left: 50%;
+  transform: translateX(-50%) translateY(20px);
+  background: var(--dark);
+  color: white;
+  padding: 12px 20px;
+  border-radius: 20px;
+  font-size: 13px;
+  font-weight: 500;
+  opacity: 0;
+  transition: all 0.3s;
+  z-index: 999;
+  white-space: nowrap;
+  pointer-events: none;
+}
+.toast.show {
+  opacity: 1;
+  transform: translateX(-50%) translateY(0);
+}
+
+/* ── MODAL OVERLAY ── */
+.modal-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0,0,0,0.5);
+  z-index: 200;
+  display: none;
+  align-items: flex-end;
+  justify-content: center;
+}
+.modal-overlay.show { display: flex; }
+.modal-sheet {
+  background: var(--warm-white);
+  border-radius: 24px 24px 0 0;
+  padding: 24px;
+  width: 100%;
+  max-width: 520px;
+  animation: slideUp 0.3s ease;
+}
+@keyframes slideUp {
+  from { transform: translateY(100%); }
+  to { transform: translateY(0); }
+}
+.modal-handle {
+  width: 36px; height: 4px;
+  background: var(--border-dark);
+  border-radius: 2px;
+  margin: 0 auto 20px;
+}
+.modal-title {
+  font-family: 'Playfair Display', serif;
+  font-size: 22px;
+  font-weight: 700;
+  margin-bottom: 16px;
+}
+
+/* ── FOOTER ── */
+.app-footer {
+  background: var(--dark);
+  color: rgba(255,255,255,0.5);
+  text-align: center;
+  padding: 16px;
+  font-size: 12px;
+  margin-bottom: 64px;
+}
+.app-footer strong { color: rgba(255,255,255,0.8); }
+</style>
+</head>
+<body>
+
+<!-- ══════════════════════════════════ -->
+<!-- SCREEN 1: LOGIN / REGISTRATIE     -->
+<!-- ══════════════════════════════════ -->
+<div id="screen-login" class="screen active">
+  <div class="login-card">
+    <div class="login-logo">
+      <span class="logo-mark">Bistro <span style="color:var(--olive)">Tafel</span></span>
+      <span class="logo-sub">Restaurant Orderingssysteem</span>
+    </div>
+
+    <div class="login-tabs">
+      <button class="login-tab active" onclick="switchLoginTab('inloggen')">Inloggen</button>
+      <button class="login-tab" onclick="switchLoginTab('registreren')">Registreren</button>
+    </div>
+
+    <!-- LOGIN FORM -->
+    <div id="login-form">
+      <p style="font-size:13px;color:var(--text-muted);margin-bottom:16px;">Selecteer uw rol:</p>
+      <div class="role-selector">
+        <div class="role-btn active" onclick="selectRole(this,'klant')">
+          <span class="role-icon">🪑</span>Klant
+        </div>
+        <div class="role-btn" onclick="selectRole(this,'admin')">
+          <span class="role-icon">⚙️</span>Admin
+        </div>
+        <div class="role-btn" onclick="selectRole(this,'keuken')">
+          <span class="role-icon">👨‍🍳</span>Keuken/Bar
+        </div>
+      </div>
+      <div class="form-group">
+        <label class="form-label">E-mailadres</label>
+        <input type="email" class="form-input" id="login-email" placeholder="uw@email.be">
+      </div>
+      <div class="form-group">
+        <label class="form-label">Wachtwoord</label>
+        <input type="password" class="form-input" id="login-password" placeholder="••••••••">
+      </div>
+      <div class="forgot-link">
+        <button class="link-text" onclick="showToast('Reset-link verstuurd naar uw e-mail 📧')">Wachtwoord vergeten?</button>
+      </div>
+      <div class="error-msg" id="login-error">❌ Ongeldige inloggegevens. Probeer opnieuw.</div>
+      <div class="blocked-msg" id="login-blocked" style="display:none">🔒 Account tijdelijk geblokkeerd na 5 mislukte pogingen. Probeer later opnieuw.</div>
+      <button class="btn btn-primary btn-full btn-lg" onclick="doLogin()">Inloggen</button>
+    </div>
+
+    <!-- REGISTER FORM -->
+    <div id="register-form" style="display:none">
+      <div class="form-group">
+        <label class="form-label">Volledige naam</label>
+        <input type="text" class="form-input" id="reg-name" placeholder="Jan Janssen">
+      </div>
+      <div class="form-group">
+        <label class="form-label">E-mailadres</label>
+        <input type="email" class="form-input" id="reg-email" placeholder="uw@email.be">
+      </div>
+      <div class="form-group">
+        <label class="form-label">Wachtwoord</label>
+        <input type="password" class="form-input" id="reg-password" placeholder="Min. 8 tekens, Hfdltr, Cijfer, Speciaal">
+        <div id="pw-strength" style="height:4px;border-radius:2px;margin-top:6px;background:var(--border);transition:all 0.3s;"></div>
+        <div id="pw-hint" style="font-size:11px;color:var(--text-muted);margin-top:4px;"></div>
+      </div>
+      <div class="error-msg" id="reg-error">⚠️ Controleer uw gegevens</div>
+      <button class="btn btn-primary btn-full btn-lg" onclick="doRegister()">Account aanmaken</button>
+    </div>
+  </div>
+</div>
+
+<!-- ══════════════════════════════════ -->
+<!-- SCREEN 2: HOME PAGINA             -->
+<!-- ══════════════════════════════════ -->
+<div id="screen-home" class="screen">
+  <header class="app-header">
+    <div class="logo">Bistro <span>Tafel</span></div>
+    <div class="table-badge">Tafel 7</div>
+    <button class="cart-btn" onclick="goTo('winkelmandje')">
+      🛒
+      <span class="cart-count" id="cart-count-header">0</span>
+    </button>
+  </header>
+
+  <div class="content">
+    <!-- Hero -->
+    <div class="hero-banner">
+      <div class="hero-badge">🔥 Vandaag populair</div>
+      <div class="hero-content">
+        <p class="hero-welcome">Welkom terug, Sophie</p>
+        <h1 class="hero-title">Wat mag het<br>vanavond zijn?</h1>
+        <button class="hero-cta" onclick="goTo('menu')">Bekijk het menu →</button>
+      </div>
+    </div>
+
+    <!-- Category pills -->
+    <div class="category-pills">
+      <button class="pill active" onclick="filterHome(this,'all')">🍽️ Alles</button>
+      <button class="pill" onclick="filterHome(this,'pizza')">🍕 Pizza</button>
+      <button class="pill" onclick="filterHome(this,'pasta')">🍝 Pasta</button>
+      <button class="pill" onclick="filterHome(this,'salade')">🥗 Salade</button>
+      <button class="pill" onclick="filterHome(this,'drank')">🥤 Dranken</button>
+      <button class="pill" onclick="filterHome(this,'dessert')">🍰 Desserts</button>
+    </div>
+
+    <!-- Product grid -->
+    <div class="product-grid" id="home-grid">
+      <!-- Populated by JS -->
+    </div>
+  </div>
+
+  <!-- Sticky cart bar -->
+  <div class="sticky-cart-bar" id="home-cart-bar" onclick="goTo('winkelmandje')">
+    <span id="home-cart-count">0 items</span>
+    <span>Bekijk mandje →</span>
+    <span id="home-cart-total">€0,00</span>
+  </div>
+
+  <!-- Bottom nav -->
+  <nav class="bottom-nav">
+    <button class="nav-item active" onclick="goTo('home')">
+      <svg viewBox="0 0 24 24" fill="currentColor"><path d="M10 20v-6h4v6h5v-8h3L12 3 2 12h3v8z"/></svg>
+      Home
+    </button>
+    <button class="nav-item" onclick="goTo('menu')">
+      <svg viewBox="0 0 24 24" fill="currentColor"><path d="M8.1 13.34l2.83-2.83L3.91 3.5c-1.56 1.56-1.56 4.08 0 5.66l4.19 4.18zm6.78-1.81c1.53.71 3.68.21 5.27-1.38 1.91-1.91 2.28-4.65.81-6.12-1.46-1.46-4.2-1.1-6.12.81-1.59 1.59-2.09 3.74-1.38 5.27L3.7 19.87l1.41 1.41L12 14.41l6.88 6.88 1.41-1.41L13.41 13l1.47-1.47z"/></svg>
+      Menu
+    </button>
+    <button class="nav-item" onclick="goTo('winkelmandje')">
+      <div class="nav-dot" id="nav-cart-dot" data-count="0">
+        <svg viewBox="0 0 24 24" fill="currentColor"><path d="M7 18c-1.1 0-1.99.9-1.99 2S5.9 22 7 22s2-.9 2-2-.9-2-2-2zM1 2v2h2l3.6 7.59-1.35 2.45c-.16.28-.25.61-.25.96C5 16.1 6.1 17 7 17h11v-2H7.42c-.14 0-.25-.11-.25-.25l.03-.12.9-1.63H19c.75 0 1.41-.41 1.75-1.03l3.58-6.49A1 1 0 0023.45 4H5.21l-.94-2H1zm16 16c-1.1 0-1.99.9-1.99 2s.89 2 1.99 2 2-.9 2-2-.9-2-2-2z"/></svg>
+      </div>
+      Mandje
+    </button>
+    <button class="nav-item" onclick="goTo('profiel')">
+      <svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 12c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm0 2c-2.67 0-8 1.34-8 4v2h16v-2c0-2.66-5.33-4-8-4z"/></svg>
+      Profiel
+    </button>
+  </nav>
+  <footer class="app-footer"><strong>Bistro Tafel</strong> · Marktplein 12, Mechelen · Alle prijzen zijn incl. BTW. Allergieën? Vraag ons personeel.</footer>
+</div>
+
+<!-- ══════════════════════════════════ -->
+<!-- SCREEN 3: MENU OVERZICHT          -->
+<!-- ══════════════════════════════════ -->
+<div id="screen-menu" class="screen">
+  <header class="app-header">
+    <button onclick="goBack()" style="background:none;border:none;font-size:20px;cursor:pointer;color:var(--text-main)">←</button>
+    <div class="logo">Menu</div>
+    <button class="cart-btn" onclick="goTo('winkelmandje')">🛒<span class="cart-count" id="cart-count-menu">0</span></button>
+  </header>
+
+  <div class="content">
+    <div class="search-bar">
+      <input type="text" class="search-input" placeholder="🔍  Zoek een gerecht..." oninput="filterMenu(this.value)">
+      <button class="filter-btn" onclick="showToast('Filters geopend')">⚙️</button>
+    </div>
+
+    <div class="category-pills">
+      <button class="pill active" onclick="filterMenuCat(this,'all')">Alles</button>
+      <button class="pill" onclick="filterMenuCat(this,'pizza')">🍕 Pizza</button>
+      <button class="pill" onclick="filterMenuCat(this,'pasta')">🍝 Pasta</button>
+      <button class="pill" onclick="filterMenuCat(this,'salade')">🥗 Salade</button>
+      <button class="pill" onclick="filterMenuCat(this,'drank')">🥤 Dranken</button>
+      <button class="pill" onclick="filterMenuCat(this,'dessert')">🍰 Desserts</button>
+    </div>
+
+    <div id="menu-list"><!-- Populated by JS --></div>
+  </div>
+
+  <div class="sticky-cart-bar" id="menu-cart-bar" onclick="goTo('winkelmandje')">
+    <span id="menu-cart-count">0 items</span>
+    <span style="font-size:13px">Bekijk mandje →</span>
+    <span id="menu-cart-total">€0,00</span>
+  </div>
+
+  <nav class="bottom-nav">
+    <button class="nav-item" onclick="goTo('home')"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M10 20v-6h4v6h5v-8h3L12 3 2 12h3v8z"/></svg>Home</button>
+    <button class="nav-item active" onclick="goTo('menu')"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M8.1 13.34l2.83-2.83L3.91 3.5c-1.56 1.56-1.56 4.08 0 5.66l4.19 4.18zm6.78-1.81c1.53.71 3.68.21 5.27-1.38 1.91-1.91 2.28-4.65.81-6.12-1.46-1.46-4.2-1.1-6.12.81-1.59 1.59-2.09 3.74-1.38 5.27L3.7 19.87l1.41 1.41L12 14.41l6.88 6.88 1.41-1.41L13.41 13l1.47-1.47z"/></svg>Menu</button>
+    <button class="nav-item" onclick="goTo('winkelmandje')"><div class="nav-dot" id="nav-cart-dot2" data-count="0"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M7 18c-1.1 0-1.99.9-1.99 2S5.9 22 7 22s2-.9 2-2-.9-2-2-2zM1 2v2h2l3.6 7.59-1.35 2.45c-.16.28-.25.61-.25.96C5 16.1 6.1 17 7 17h11v-2H7.42c-.14 0-.25-.11-.25-.25l.03-.12.9-1.63H19c.75 0 1.41-.41 1.75-1.03l3.58-6.49A1 1 0 0023.45 4H5.21l-.94-2H1zm16 16c-1.1 0-1.99.9-1.99 2s.89 2 1.99 2 2-.9 2-2-.9-2-2-2z"/></svg></div>Mandje</button>
+    <button class="nav-item" onclick="goTo('profiel')"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 12c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm0 2c-2.67 0-8 1.34-8 4v2h16v-2c0-2.66-5.33-4-8-4z"/></svg>Profiel</button>
+  </nav>
+</div>
+
+<!-- ══════════════════════════════════ -->
+<!-- SCREEN 4: WINKELMANDJE            -->
+<!-- ══════════════════════════════════ -->
+<div id="screen-winkelmandje" class="screen">
+  <header class="app-header">
+    <button onclick="goBack()" style="background:none;border:none;font-size:20px;cursor:pointer;color:var(--text-main)">←</button>
+    <div class="logo">Winkelmandje</div>
+    <button onclick="clearCart();showToast('Mandje geleegd 🗑️')" style="background:none;border:none;cursor:pointer;font-size:18px;color:var(--text-muted)">🗑️</button>
+  </header>
+
+  <div class="content">
+    <div class="table-indicator">
+      <div class="table-indicator-info">
+        <div class="table-number-big">7</div>
+        <div>
+          <div class="table-label">Tafelnummer</div>
+          <div class="table-name">Tafel 7 — Terras</div>
+        </div>
+      </div>
+      <button class="btn btn-sm btn-secondary" onclick="showToast('Tafelnummer gewijzigd')">Wijzigen</button>
+    </div>
+
+    <div id="cart-empty" class="empty-cart">
+      <div class="empty-cart-icon">🛒</div>
+      <p class="empty-cart-text">Je mandje is leeg.<br>Ga terug naar het menu om gerechten toe te voegen.</p>
+      <button class="btn btn-primary" onclick="goTo('menu')">← Naar het menu</button>
+    </div>
+
+    <div id="cart-items-list"><!-- Populated by JS --></div>
+
+    <div id="cart-bottom" style="display:none">
+      <div class="remarks-area">
+        <label class="form-label" style="padding:0">Opmerking voor de keuken</label>
+        <textarea class="remarks-input" rows="2" placeholder="bv. zonder uien, extra saus..."></textarea>
+      </div>
+
+      <div class="price-summary">
+        <div class="price-row"><span>Subtotaal</span><span id="subtotal">€0,00</span></div>
+        <div class="price-row"><span>BTW (21%)</span><span id="btw">€0,00</span></div>
+        <div class="price-row"><span>Servicekosten</span><span>€0,50</span></div>
+        <div class="price-row total"><span>Totaal</span><span id="total">€0,00</span></div>
+      </div>
+    </div>
+  </div>
+
+  <div class="place-order-bar" id="place-order-bar" style="display:none">
+    <button class="btn btn-primary btn-full btn-lg" onclick="goTo('betaling')">
+      Bestelling plaatsen →
+    </button>
+    <p style="text-align:center;font-size:11px;color:var(--text-muted);margin-top:8px">Betalen via iDEAL of creditcard</p>
+  </div>
+
+  <nav class="bottom-nav">
+    <button class="nav-item" onclick="goTo('home')"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M10 20v-6h4v6h5v-8h3L12 3 2 12h3v8z"/></svg>Home</button>
+    <button class="nav-item" onclick="goTo('menu')"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M8.1 13.34l2.83-2.83L3.91 3.5c-1.56 1.56-1.56 4.08 0 5.66l4.19 4.18zm6.78-1.81c1.53.71 3.68.21 5.27-1.38 1.91-1.91 2.28-4.65.81-6.12-1.46-1.46-4.2-1.1-6.12.81-1.59 1.59-2.09 3.74-1.38 5.27L3.7 19.87l1.41 1.41L12 14.41l6.88 6.88 1.41-1.41L13.41 13l1.47-1.47z"/></svg>Menu</button>
+    <button class="nav-item active" onclick="goTo('winkelmandje')"><div class="nav-dot" id="nav-cart-dot3" data-count="0"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M7 18c-1.1 0-1.99.9-1.99 2S5.9 22 7 22s2-.9 2-2-.9-2-2-2zM1 2v2h2l3.6 7.59-1.35 2.45c-.16.28-.25.61-.25.96C5 16.1 6.1 17 7 17h11v-2H7.42c-.14 0-.25-.11-.25-.25l.03-.12.9-1.63H19c.75 0 1.41-.41 1.75-1.03l3.58-6.49A1 1 0 0023.45 4H5.21l-.94-2H1zm16 16c-1.1 0-1.99.9-1.99 2s.89 2 1.99 2 2-.9 2-2-.9-2-2-2z"/></svg></div>Mandje</button>
+    <button class="nav-item" onclick="goTo('profiel')"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 12c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm0 2c-2.67 0-8 1.34-8 4v2h16v-2c0-2.66-5.33-4-8-4z"/></svg>Profiel</button>
+  </nav>
+</div>
+
+<!-- ══════════════════════════════════ -->
+<!-- SCREEN 5: BETALING                -->
+<!-- ══════════════════════════════════ -->
+<div id="screen-betaling" class="screen">
+  <header class="app-header">
+    <button onclick="goBack()" style="background:none;border:none;font-size:20px;cursor:pointer;color:var(--text-main)">←</button>
+    <div class="logo">Betaling</div>
+    <div style="width:42px"></div>
+  </header>
+
+  <div class="content" id="payment-content">
+    <div class="payment-section">
+      <!-- Order summary mini -->
+      <div class="order-summary-mini">
+        <div class="order-summary-mini-title">Overzicht bestelling</div>
+        <div id="payment-summary"><!-- JS --></div>
+        <div style="border-top:1px solid var(--border);margin-top:10px;padding-top:10px;display:flex;justify-content:space-between;font-weight:700;font-size:15px;">
+          <span>Totaal</span><span id="payment-total" style="color:var(--terracotta)">€0,00</span>
+        </div>
+      </div>
+
+      <!-- Payment methods -->
+      <p style="font-size:13px;font-weight:700;color:var(--text-muted);text-transform:uppercase;letter-spacing:0.5px;margin-bottom:12px;">Betaalmethode</p>
+
+      <div class="payment-method selected" onclick="selectPayment(this)">
+        <div class="payment-method-icon">🏦</div>
+        <div class="payment-method-info">
+          <div class="payment-method-name">iDEAL</div>
+          <div class="payment-method-desc">Betaal via uw bank</div>
+        </div>
+        <div class="payment-radio"></div>
+      </div>
+
+      <div class="payment-method" onclick="selectPayment(this)">
+        <div class="payment-method-icon">💳</div>
+        <div class="payment-method-info">
+          <div class="payment-method-name">Creditcard</div>
+          <div class="payment-method-desc">Visa / Mastercard</div>
+        </div>
+        <div class="payment-radio"></div>
+      </div>
+
+      <div class="payment-method" onclick="selectPayment(this)">
+        <div class="payment-method-icon">📱</div>
+        <div class="payment-method-info">
+          <div class="payment-method-name">Apple / Google Pay</div>
+          <div class="payment-method-desc">Snel en veilig</div>
+        </div>
+        <div class="payment-radio"></div>
+      </div>
+
+      <div style="background:var(--olive-pale);border:1px solid var(--olive);border-radius:var(--radius-sm);padding:12px 14px;font-size:12px;color:var(--olive);margin-top:16px;">
+        🔒 Alle betalingen verlopen via <strong>Mollie</strong>. Uw kaartgegevens worden nooit opgeslagen.
+      </div>
+
+      <button class="btn btn-primary btn-full btn-lg" style="margin-top:20px" onclick="doBetaling()">
+        Betalen via Mollie →
+      </button>
+    </div>
+  </div>
+
+  <!-- SUCCESS STATE (hidden by default) -->
+  <div class="success-screen" id="payment-success" style="display:none">
+    <div class="success-icon">✅</div>
+    <h2 class="success-title">Bestelling bevestigd!</h2>
+    <p class="success-text">Bedankt! Je bestelling is ontvangen.<br>De keuken gaat aan de slag.</p>
+    <div class="order-number">Bestelling #456</div>
+    <p style="font-size:13px;color:var(--text-muted);margin-bottom:20px;">Een bevestiging is verstuurd naar uw e-mail.</p>
+    <button class="btn btn-olive btn-lg" onclick="resetAndGoHome()">← Terug naar home</button>
+  </div>
+</div>
+
+<!-- ══════════════════════════════════ -->
+<!-- SCREEN 6: ADMIN DASHBOARD         -->
+<!-- ══════════════════════════════════ -->
+<div id="screen-admin" class="screen">
+  <div class="admin-header">
+    <div>
+      <div class="admin-title">Beheerderspaneel</div>
+      <div class="admin-subtitle">Ingelogd als: <a href="/cdn-cgi/l/email-protection" class="__cf_email__" data-cfemail="a6c7c2cbcfc8e6c4cfd5d2d4c9d2c7c0c3ca88c4c3">[email&#160;protected]</a></div>
+    </div>
+    <button onclick="goTo('home')" style="background:rgba(255,255,255,0.1);border:1px solid rgba(255,255,255,0.2);color:white;padding:8px 14px;border-radius:8px;cursor:pointer;font-family:'DM Sans',sans-serif;font-size:13px;">
+      ← Klant
+    </button>
+  </div>
+
+  <div class="admin-nav">
+    <button class="admin-nav-item active" onclick="switchAdmin(this,'overzicht')">📊 Overzicht</button>
+    <button class="admin-nav-item" onclick="switchAdmin(this,'menu')">🍽️ Menu</button>
+    <button class="admin-nav-item" onclick="switchAdmin(this,'bestellingen')">📋 Bestellingen</button>
+    <button class="admin-nav-item" onclick="switchAdmin(this,'openingsuren')">🕐 Openingsuren</button>
+    <button class="admin-nav-item" onclick="switchAdmin(this,'accounts')">👥 Accounts</button>
+  </div>
+
+  <div style="flex:1;overflow-y:auto">
+
+    <!-- OVERZICHT PANEL -->
+    <div class="admin-panel active" id="admin-overzicht">
+      <div class="stats-grid">
+        <div class="stat-card">
+          <div class="stat-value">€847</div>
+          <div class="stat-label">Omzet vandaag</div>
+          <div class="stat-change">↑ +12% vs gisteren</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-value">34</div>
+          <div class="stat-label">Bestellingen</div>
+          <div class="stat-change">↑ +5 actief nu</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-value">€24,90</div>
+          <div class="stat-label">Gem. bestelling</div>
+          <div class="stat-change" style="color:var(--gold)">→ Stabiel</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-value">4.7⭐</div>
+          <div class="stat-label">Klantbeoordeling</div>
+          <div class="stat-change">↑ +0.2 dit kwartaal</div>
+        </div>
+      </div>
+      <p style="font-size:13px;font-weight:700;color:var(--text-muted);text-transform:uppercase;letter-spacing:0.5px;margin-bottom:12px;">Actieve bestellingen</p>
+      <table class="order-table">
+        <thead><tr><th>Tafel</th><th>Items</th><th>Bedrag</th><th>Status</th></tr></thead>
+        <tbody>
+          <tr><td><strong>T3</strong></td><td>3 items</td><td>€28,50</td><td><span class="status-badge status-bereiding">In bereiding</span></td></tr>
+          <tr><td><strong>T7</strong></td><td>2 items</td><td>€19,00</td><td><span class="status-badge status-geplaatst">Geplaatst</span></td></tr>
+          <tr><td><strong>T12</strong></td><td>5 items</td><td>€54,20</td><td><span class="status-badge status-klaar">Klaar</span></td></tr>
+          <tr><td><strong>T2</strong></td><td>1 item</td><td>€12,00</td><td><span class="status-badge status-geleverd">Geleverd</span></td></tr>
+        </tbody>
+      </table>
+    </div>
+
+    <!-- MENU PANEL -->
+    <div class="admin-panel" id="admin-menu">
+      <p style="font-size:13px;font-weight:700;color:var(--text-muted);text-transform:uppercase;letter-spacing:0.5px;margin-bottom:12px;">Menu items beheren</p>
+      <div id="admin-menu-list"><!-- JS --></div>
+      <button class="btn btn-olive btn-full" style="margin-top:12px" onclick="showToast('➕ Nieuw gerecht toegevoegd')">+ Nieuw gerecht toevoegen</button>
+    </div>
+
+    <!-- BESTELLINGEN PANEL -->
+    <div class="admin-panel" id="admin-bestellingen">
+      <p style="font-size:13px;font-weight:700;color:var(--text-muted);text-transform:uppercase;letter-spacing:0.5px;margin-bottom:12px;">Alle bestellingen vandaag</p>
+      <table class="order-table">
+        <thead><tr><th>ID</th><th>Tafel</th><th>Tijdstip</th><th>Bedrag</th><th>Status</th></tr></thead>
+        <tbody>
+          <tr><td>#451</td><td>T1</td><td>18:12</td><td>€32,00</td><td><span class="status-badge status-geleverd">Geleverd</span></td></tr>
+          <tr><td>#452</td><td>T5</td><td>18:31</td><td>€17,50</td><td><span class="status-badge status-geleverd">Geleverd</span></td></tr>
+          <tr><td>#453</td><td>T3</td><td>19:02</td><td>€28,50</td><td><span class="status-badge status-bereiding">In bereiding</span></td></tr>
+          <tr><td>#454</td><td>T7</td><td>19:15</td><td>€19,00</td><td><span class="status-badge status-geplaatst">Geplaatst</span></td></tr>
+          <tr><td>#455</td><td>T12</td><td>19:22</td><td>€54,20</td><td><span class="status-badge status-klaar">Klaar</span></td></tr>
+          <tr><td>#456</td><td>T7</td><td>19:35</td><td>€24,50</td><td><span class="status-badge status-geplaatst">Geplaatst</span></td></tr>
+        </tbody>
+      </table>
+    </div>
+
+    <!-- OPENINGSUREN PANEL -->
+    <div class="admin-panel" id="admin-openingsuren">
+      <p style="font-size:13px;font-weight:700;color:var(--text-muted);text-transform:uppercase;letter-spacing:0.5px;margin-bottom:12px;">Openingsuren aanpassen</p>
+      <div style="background:white;border-radius:var(--radius);padding:16px;border:1px solid var(--border)">
+        <div class="opening-row"><div class="opening-day">Maandag</div><div class="opening-time">Gesloten</div><button class="btn btn-sm btn-secondary" onclick="showToast('Uren bijgewerkt')">Aanpassen</button></div>
+        <div class="opening-row"><div class="opening-day">Dinsdag</div><div class="opening-time">11:30 – 22:00</div><button class="btn btn-sm btn-secondary" onclick="showToast('Uren bijgewerkt')">Aanpassen</button></div>
+        <div class="opening-row"><div class="opening-day">Woensdag</div><div class="opening-time">11:30 – 22:00</div><button class="btn btn-sm btn-secondary" onclick="showToast('Uren bijgewerkt')">Aanpassen</button></div>
+        <div class="opening-row"><div class="opening-day">Donderdag</div><div class="opening-time">11:30 – 22:00</div><button class="btn btn-sm btn-secondary" onclick="showToast('Uren bijgewerkt')">Aanpassen</button></div>
+        <div class="opening-row"><div class="opening-day">Vrijdag</div><div class="opening-time">11:30 – 23:00</div><button class="btn btn-sm btn-secondary" onclick="showToast('Uren bijgewerkt')">Aanpassen</button></div>
+        <div class="opening-row"><div class="opening-day">Zaterdag</div><div class="opening-time">12:00 – 23:00</div><button class="btn btn-sm btn-secondary" onclick="showToast('Uren bijgewerkt')">Aanpassen</button></div>
+        <div class="opening-row" style="border:none"><div class="opening-day">Zondag</div><div class="opening-time">12:00 – 21:00</div><button class="btn btn-sm btn-secondary" onclick="showToast('Uren bijgewerkt')">Aanpassen</button></div>
+      </div>
+    </div>
+
+    <!-- ACCOUNTS PANEL -->
+    <div class="admin-panel" id="admin-accounts">
+      <p style="font-size:13px;font-weight:700;color:var(--text-muted);text-transform:uppercase;letter-spacing:0.5px;margin-bottom:12px;">Klantaccounts</p>
+      <div id="admin-accounts-list"></div>
+    </div>
+
+  </div>
+</div>
+
+<!-- ══════════════════════════════════ -->
+<!-- SCREEN 7: KEUKEN/BAR              -->
+<!-- ══════════════════════════════════ -->
+<div id="screen-keuken" class="screen">
+  <div class="kitchen-header">
+    <div>
+      <div class="kitchen-title">🍳 Keuken Display</div>
+      <div style="font-size:12px;color:rgba(255,255,255,0.4)">Bistro Tafel · Real-time</div>
+    </div>
+    <div>
+      <div class="kitchen-time" id="kitchen-clock">19:35</div>
+      <div class="kitchen-date" id="kitchen-date">Donderdag 19 maart 2026</div>
+    </div>
+  </div>
+
+  <div style="background:#1C1C1A;padding:8px 16px;display:flex;gap:12px;align-items:center">
+    <button onclick="goTo('home')" style="background:rgba(255,255,255,0.08);border:1px solid rgba(255,255,255,0.15);color:rgba(255,255,255,0.7);padding:6px 14px;border-radius:6px;cursor:pointer;font-family:'DM Sans',sans-serif;font-size:12px;">← Klantview</button>
+    <span style="color:rgba(255,255,255,0.3);font-size:12px">|</span>
+    <span style="color:#4ADE80;font-size:12px;font-weight:600;">● Live</span>
+    <span style="color:rgba(255,255,255,0.4);font-size:12px;">5 actieve bestellingen</span>
+  </div>
+
+  <div style="flex:1;overflow-y:auto;background:#F4F1EC">
+    <div class="kitchen-columns" id="kitchen-board"><!-- JS --></div>
+  </div>
+</div>
+
+<!-- ══════════════════════════════════ -->
+<!-- SCREEN 8: PROFIEL                 -->
+<!-- ══════════════════════════════════ -->
+<div id="screen-profiel" class="screen">
+  <header class="app-header">
+    <button onclick="goBack()" style="background:none;border:none;font-size:20px;cursor:pointer;">←</button>
+    <div class="logo">Mijn Profiel</div>
+    <button onclick="doLogout()" style="background:none;border:1px solid var(--border-dark);border-radius:6px;padding:6px 12px;font-size:12px;cursor:pointer;color:var(--text-muted);font-family:'DM Sans',sans-serif;">Uitloggen</button>
+  </header>
+
+  <div class="content">
+    <div class="profile-header-section">
+      <div class="profile-avatar">👤</div>
+      <div class="profile-name">Sophie Janssens</div>
+      <div class="profile-email"><a href="/cdn-cgi/l/email-protection" class="__cf_email__" data-cfemail="83f0ecf3ebeae6c3e6eee2eaefade1e6">[email&#160;protected]</a></div>
+    </div>
+
+    <div class="profile-section">
+      <p style="font-size:12px;font-weight:700;color:var(--text-muted);text-transform:uppercase;letter-spacing:0.5px;margin-bottom:10px;">Mijn instellingen</p>
+
+      <div class="profile-option" onclick="toggleAllergies()">
+        <div class="profile-option-icon">🌿</div>
+        <div class="profile-option-info">
+          <div class="profile-option-title">Allergieën beheren</div>
+          <div class="profile-option-sub" id="allergy-sub">Gluten, Noten</div>
+        </div>
+        <div class="profile-option-arrow">›</div>
+      </div>
+
+      <div class="profile-option" onclick="openTaalModal()">
+        <div class="profile-option-icon">🌐</div>
+        <div class="profile-option-info">
+          <div class="profile-option-title">Taalvoorkeur</div>
+          <div class="profile-option-sub">Nederlands (NL)</div>
+        </div>
+        <div class="profile-option-arrow">›</div>
+      </div>
+
+      <div class="profile-option" onclick="openHistorieModal()">
+        <div class="profile-option-icon">📜</div>
+        <div class="profile-option-info">
+          <div class="profile-option-title">Bestelhistorie</div>
+          <div class="profile-option-sub">12 eerdere bestellingen</div>
+        </div>
+        <div class="profile-option-arrow">›</div>
+      </div>
+
+      <div class="profile-option" onclick="showToast('Wachtwoord reset-link verstuurd naar uw e-mail')">
+        <div class="profile-option-icon">🔑</div>
+        <div class="profile-option-info">
+          <div class="profile-option-title">Wachtwoord wijzigen</div>
+          <div class="profile-option-sub">Laatste wijziging: 2 maanden geleden</div>
+        </div>
+        <div class="profile-option-arrow">›</div>
+      </div>
+
+      <p style="font-size:12px;font-weight:700;color:var(--text-muted);text-transform:uppercase;letter-spacing:0.5px;margin:16px 0 10px;">Allergieën</p>
+      <div class="allergy-grid" id="allergy-grid">
+        <!-- JS -->
+      </div>
+    </div>
+  </div>
+
+  <nav class="bottom-nav">
+    <button class="nav-item" onclick="goTo('home')"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M10 20v-6h4v6h5v-8h3L12 3 2 12h3v8z"/></svg>Home</button>
+    <button class="nav-item" onclick="goTo('menu')"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M8.1 13.34l2.83-2.83L3.91 3.5c-1.56 1.56-1.56 4.08 0 5.66l4.19 4.18zm6.78-1.81c1.53.71 3.68.21 5.27-1.38 1.91-1.91 2.28-4.65.81-6.12-1.46-1.46-4.2-1.1-6.12.81-1.59 1.59-2.09 3.74-1.38 5.27L3.7 19.87l1.41 1.41L12 14.41l6.88 6.88 1.41-1.41L13.41 13l1.47-1.47z"/></svg>Menu</button>
+    <button class="nav-item" onclick="goTo('winkelmandje')"><div class="nav-dot" id="nav-cart-dot4" data-count="0"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M7 18c-1.1 0-1.99.9-1.99 2S5.9 22 7 22s2-.9 2-2-.9-2-2-2zM1 2v2h2l3.6 7.59-1.35 2.45c-.16.28-.25.61-.25.96C5 16.1 6.1 17 7 17h11v-2H7.42c-.14 0-.25-.11-.25-.25l.03-.12.9-1.63H19c.75 0 1.41-.41 1.75-1.03l3.58-6.49A1 1 0 0023.45 4H5.21l-.94-2H1zm16 16c-1.1 0-1.99.9-1.99 2s.89 2 1.99 2 2-.9 2-2-.9-2-2-2z"/></svg></div>Mandje</button>
+    <button class="nav-item active" onclick="goTo('profiel')"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 12c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm0 2c-2.67 0-8 1.34-8 4v2h16v-2c0-2.66-5.33-4-8-4z"/></svg>Profiel</button>
+  </nav>
+</div>
+
+
+<!-- TAAL MODAL -->
+<div class="modal-overlay" id="taal-modal" onclick="if(event.target===this)closeTaalModal()">
+  <div class="modal-sheet">
+    <div class="modal-handle"></div>
+    <div class="modal-title">Taalvoorkeur instellen</div>
+    <div style="display:flex;flex-direction:column;gap:10px;">
+      <div class="taal-option" data-taal="NL" onclick="setTaal('NL')" style="display:flex;align-items:center;gap:14px;padding:14px;border:2px solid var(--border);border-radius:var(--radius-sm);cursor:pointer;transition:all 0.2s;">
+        <span style="font-size:24px">&#127463;&#127466;</span>
+        <div><div style="font-weight:600">Nederlands</div><div style="font-size:12px;color:var(--text-muted)">NL</div></div>
+      </div>
+      <div class="taal-option" data-taal="FR" onclick="setTaal('FR')" style="display:flex;align-items:center;gap:14px;padding:14px;border:2px solid var(--border);border-radius:var(--radius-sm);cursor:pointer;transition:all 0.2s;">
+        <span style="font-size:24px">&#127467;&#127479;</span>
+        <div><div style="font-weight:600">Frans</div><div style="font-size:12px;color:var(--text-muted)">FR</div></div>
+      </div>
+      <div class="taal-option" data-taal="EN" onclick="setTaal('EN')" style="display:flex;align-items:center;gap:14px;padding:14px;border:2px solid var(--border);border-radius:var(--radius-sm);cursor:pointer;transition:all 0.2s;">
+        <span style="font-size:24px">&#127468;&#127463;</span>
+        <div><div style="font-weight:600">Engels</div><div style="font-size:12px;color:var(--text-muted)">EN</div></div>
+      </div>
+    </div>
+    <button class="btn btn-secondary btn-full" style="margin-top:16px" onclick="closeTaalModal()">Annuleren</button>
+  </div>
+</div>
+
+<!-- BESTELHISTORIE MODAL -->
+<div class="modal-overlay" id="historie-modal" onclick="if(event.target===this)closeHistorieModal()">
+  <div class="modal-sheet" style="max-height:80vh;overflow-y:auto;">
+    <div class="modal-handle"></div>
+    <div class="modal-title">Bestelhistorie</div>
+    <div id="historie-content"></div>
+    <button class="btn btn-secondary btn-full" style="margin-top:16px" onclick="closeHistorieModal()">Sluiten</button>
+  </div>
+</div>
+
+<style>
+.taal-option.selected { border-color: var(--terracotta) !important; background: var(--terracotta-pale); }
+.taal-option:hover { border-color: var(--border-dark) !important; background: var(--cream); }
+</style>
+
+<!-- Toast -->
+<div class="toast" id="toast"></div>
+
+<script data-cfasync="false" src="/cdn-cgi/scripts/5c5dd728/cloudflare-static/email-decode.min.js"></script>
+<script>
+// ══════════════════════════════════════
+// MENU DATA
+// ══════════════════════════════════════
+const menuData = [
+  { id:1, cat:'pizza', name:'Margherita', desc:'Tomaat, mozzarella, basilicum', price:12.50, emoji:'🍕', tags:['veg','popular'] },
+  { id:2, cat:'pizza', name:'Quattro Stagioni', desc:'Ham, champignons, artisjok, olijven', price:15.00, emoji:'🍕', tags:['popular'] },
+  { id:3, cat:'pizza', name:'Prosciutto', desc:'Rucola, parmaham, parmezaan', price:16.50, emoji:'🍕', tags:[] },
+  { id:4, cat:'pasta', name:'Spaghetti Carbonara', desc:'Ei, pancetta, pecorino, peper', price:14.00, emoji:'🍝', tags:['popular'] },
+  { id:5, cat:'pasta', name:'Penne Arrabbiata', desc:'Pikante tomatensaus, knoflook', price:12.00, emoji:'🍝', tags:['veg','spicy'] },
+  { id:6, cat:'pasta', name:'Tagliatelle al Ragu', desc:'Langzaam gegaard vlees in tomatensaus', price:15.50, emoji:'🍝', tags:[] },
+  { id:7, cat:'salade', name:'Caprese', desc:'Tomaat, buffelmozzarella, basilicum', price:9.50, emoji:'🥗', tags:['veg'] },
+  { id:8, cat:'salade', name:'Caesar Salade', desc:'Romeinse sla, croutons, ansjovis, parmezaan', price:11.00, emoji:'🥗', tags:[] },
+  { id:9, cat:'drank', name:'Huiswijn (glas)', desc:'Rood of wit, selectie van het huis', price:5.50, emoji:'🍷', tags:[] },
+  { id:10, cat:'drank', name:'Fris (groot)', desc:'Cola, Fanta, Sprite of water', price:3.50, emoji:'🥤', tags:[] },
+  { id:11, cat:'drank', name:'Mocktail', desc:'Vers fruitsap met munt en limoen', price:5.00, emoji:'🍹', tags:['veg'] },
+  { id:12, cat:'dessert', name:'Tiramisu', desc:'Klassiek Italiaans met mascarpone', price:7.50, emoji:'🍰', tags:['popular'] },
+  { id:13, cat:'dessert', name:'Panna Cotta', desc:'Vanille met rode vruchtencompote', price:6.50, emoji:'🍮', tags:['veg'] },
+];
+
+const allergyList = ['Gluten','Lactose','Noten','Eieren','Vis','Soja','Sesam','Mosterd'];
+
+// ══════════════════════════════════════
+// ACCOUNT SYSTEEM (in-memory, sessie-persistent via sessionStorage)
+// accounts: [{ name, email, password, allergies:[], taal:'NL', orderHistory:[] }]
+// ══════════════════════════════════════
+function getAccounts() {
+  try { return JSON.parse(sessionStorage.getItem('bt_accounts') || '[]'); } catch(e) { return []; }
+}
+function saveAccounts(acc) {
+  try { sessionStorage.setItem('bt_accounts', JSON.stringify(acc)); } catch(e) {}
+}
+function getSessionEmail() {
+  try { return sessionStorage.getItem('bt_session') || null; } catch(e) { return null; }
+}
+function setSession(email) {
+  try { sessionStorage.setItem('bt_session', email); } catch(e) {}
+}
+function clearSession() {
+  try { sessionStorage.removeItem('bt_session'); } catch(e) {}
+}
+function getCurrentUser() {
+  const email = getSessionEmail();
+  if (!email) return null;
+  return getAccounts().find(a => a.email.toLowerCase() === email.toLowerCase()) || null;
+}
+function saveCurrentUser(updated) {
+  const accounts = getAccounts();
+  const idx = accounts.findIndex(a => a.email.toLowerCase() === updated.email.toLowerCase());
+  if (idx !== -1) { accounts[idx] = updated; saveAccounts(accounts); }
+}
+
+// ══════════════════════════════════════
+// APP STATE
+// ══════════════════════════════════════
+let cart = [];
+let failedLoginAttempts = 0;
+let selectedRole = 'klant';
+let screenHistory = [];
+let currentMenuCat = 'all';
+
+// ══════════════════════════════════════
+// INIT
+// ══════════════════════════════════════
+document.addEventListener('DOMContentLoaded', () => {
+  const user = getCurrentUser();
+  if (user) {
+    screenHistory = ['home'];
+    goTo('home');
+  } else {
+    screenHistory = ['login'];
+    document.getElementById('screen-login').classList.add('active');
+  }
+  renderHomeGrid('all');
+  renderMenuList('all');
+  updateClock();
+  setInterval(updateClock, 1000);
+
+  const pwInput = document.getElementById('reg-password');
+  if (pwInput) {
+    pwInput.addEventListener('input', function() {
+      const v = this.value;
+      let score = 0;
+      if (v.length >= 8) score++;
+      if (/[A-Z]/.test(v)) score++;
+      if (/[0-9]/.test(v)) score++;
+      if (/[^a-zA-Z0-9]/.test(v)) score++;
+      const colors = ['#EF4444','#F97316','#EAB308','#22C55E'];
+      const labels = ['Zeer zwak','Zwak','Matig','Sterk'];
+      const bar = document.getElementById('pw-strength');
+      const hint = document.getElementById('pw-hint');
+      if (bar) { bar.style.background = score > 0 ? colors[score-1] : 'var(--border)'; bar.style.width = (score*25)+'%'; }
+      if (hint) hint.textContent = score > 0 ? labels[score-1] : '';
+    });
+  }
+});
+
+// ══════════════════════════════════════
+// NAVIGATION
+// ══════════════════════════════════════
+function goTo(screenName) {
+  const screenMap = {
+    'home':'screen-home','menu':'screen-menu','winkelmandje':'screen-winkelmandje',
+    'betaling':'screen-betaling','admin':'screen-admin','keuken':'screen-keuken',
+    'profiel':'screen-profiel','login':'screen-login'
+  };
+  document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+  document.getElementById(screenMap[screenName]).classList.add('active');
+  screenHistory.push(screenName);
+  if (screenName === 'winkelmandje') renderCart();
+  if (screenName === 'betaling') renderPaymentSummary();
+  if (screenName === 'admin') { renderAdminMenu(); renderAdminAccounts(); }
+  if (screenName === 'keuken') renderKitchen();
+  if (screenName === 'profiel') renderProfile();
+  if (screenName === 'home') { updateUserGreeting(); renderHomeGrid('all'); }
+  window.scrollTo(0,0);
+}
+function goBack() {
+  screenHistory.pop();
+  const prev = screenHistory[screenHistory.length-1] || 'home';
+  screenHistory.pop();
+  goTo(prev);
+}
+
+// ══════════════════════════════════════
+// LOGIN / REGISTRATIE
+// ══════════════════════════════════════
+function switchLoginTab(tab) {
+  document.querySelectorAll('.login-tab').forEach(t => t.classList.remove('active'));
+  event.target.classList.add('active');
+  document.getElementById('login-form').style.display = tab === 'inloggen' ? 'block' : 'none';
+  document.getElementById('register-form').style.display = tab === 'registreren' ? 'block' : 'none';
+  document.getElementById('login-error').classList.remove('show');
+  document.getElementById('reg-error').classList.remove('show');
+}
+
+function selectRole(el, role) {
+  document.querySelectorAll('.role-btn').forEach(b => b.classList.remove('active'));
+  el.classList.add('active');
+  selectedRole = role;
+}
+
+function doLogin() {
+  const email = document.getElementById('login-email').value.trim().toLowerCase();
+  const pw = document.getElementById('login-password').value;
+  const errEl = document.getElementById('login-error');
+  const blockedEl = document.getElementById('login-blocked');
+  errEl.classList.remove('show');
+
+  if (!email || !pw) { showError('login-error', 'Vul alle velden in.'); return; }
+
+  if (failedLoginAttempts >= 5) {
+    blockedEl.style.display = 'block'; return;
+  }
+
+  // Vaste demo-accounts voor admin/keuken
+  if (selectedRole === 'admin' && email === 'admin@bistrotafel.be' && pw === 'Admin1!') {
+    setSession('admin@bistrotafel.be'); failedLoginAttempts = 0; goTo('admin'); return;
+  }
+  if (selectedRole === 'keuken' && email === 'keuken@bistrotafel.be' && pw === 'Keuken1!') {
+    setSession('keuken@bistrotafel.be'); failedLoginAttempts = 0; goTo('keuken'); return;
+  }
+
+  // Klant: zoek in geregistreerde accounts
+  const accounts = getAccounts();
+  const user = accounts.find(a => a.email.toLowerCase() === email);
+  if (!user || user.password !== pw) {
+    failedLoginAttempts++;
+    if (failedLoginAttempts >= 5) {
+      blockedEl.style.display = 'block'; errEl.classList.remove('show');
+    } else {
+      showError('login-error', 'Ongeldig e-mailadres of wachtwoord. Poging ' + failedLoginAttempts + '/5.');
+    }
+    return;
+  }
+
+  failedLoginAttempts = 0;
+  setSession(user.email);
+  blockedEl.style.display = 'none';
+  goTo('home');
+}
+
+function doRegister() {
+  const name = document.getElementById('reg-name').value.trim();
+  const email = document.getElementById('reg-email').value.trim().toLowerCase();
+  const pw = document.getElementById('reg-password').value;
+  document.getElementById('reg-error').classList.remove('show');
+
+  if (!name || !email || !pw) { showError('reg-error', 'Vul alle velden in.'); return; }
+  if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) { showError('reg-error', 'Ongeldig e-mailadres.'); return; }
+  if (pw.length < 8) { showError('reg-error', 'Wachtwoord moet minimaal 8 tekens bevatten.'); return; }
+  if (!/[A-Z]/.test(pw)) { showError('reg-error', 'Wachtwoord moet een hoofdletter bevatten.'); return; }
+  if (!/[0-9]/.test(pw)) { showError('reg-error', 'Wachtwoord moet een cijfer bevatten.'); return; }
+  if (!/[^a-zA-Z0-9]/.test(pw)) { showError('reg-error', 'Wachtwoord moet een speciaal teken bevatten (! @ # ...).'); return; }
+
+  const accounts = getAccounts();
+  if (accounts.find(a => a.email.toLowerCase() === email)) {
+    showError('reg-error', 'Dit e-mailadres is al in gebruik.'); return;
+  }
+
+  const newUser = { name, email, password: pw, allergies: [], taal: 'NL', orderHistory: [] };
+  accounts.push(newUser);
+  saveAccounts(accounts);
+  setSession(email);
+
+  showToast('Account aangemaakt! Welkom, ' + name + '!');
+  setTimeout(() => goTo('home'), 800);
+}
+
+function doLogout() {
+  clearSession(); cart = []; updateCartUI();
+  screenHistory = ['login'];
+  document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+  document.getElementById('screen-login').classList.add('active');
+  document.getElementById('login-email').value = '';
+  document.getElementById('login-password').value = '';
+  failedLoginAttempts = 0;
+  document.getElementById('login-blocked').style.display = 'none';
+  showToast('U bent uitgelogd.');
+}
+
+function showError(id, msg) {
+  const el = document.getElementById(id);
+  el.textContent = msg;
+  el.classList.add('show');
+}
+
+// ══════════════════════════════════════
+// PROFIEL & BEGROETING
+// ══════════════════════════════════════
+function updateUserGreeting() {
+  const user = getCurrentUser();
+  const greetEl = document.querySelector('.hero-content .hero-welcome');
+  if (greetEl && user) greetEl.textContent = 'Welkom terug, ' + user.name.split(' ')[0] + '!';
+}
+
+function renderProfile() {
+  const user = getCurrentUser();
+  if (!user) return;
+  const nameEl = document.querySelector('.profile-name');
+  const emailEl = document.querySelector('.profile-email');
+  if (nameEl) nameEl.textContent = user.name;
+  if (emailEl) emailEl.textContent = user.email;
+
+  // Taalvoorkeur subtitle bijwerken
+  const taalNames = { NL:'Nederlands (NL)', FR:'Frans (FR)', EN:'Engels (EN)' };
+  const subs = document.querySelectorAll('#screen-profiel .profile-option-sub');
+  if (subs[1]) subs[1].textContent = taalNames[user.taal || 'NL'] || 'Nederlands (NL)';
+  if (subs[2]) subs[2].textContent = (user.orderHistory||[]).length
+    ? (user.orderHistory.length) + ' eerdere bestelling' + (user.orderHistory.length !== 1 ? 'en' : '')
+    : 'Nog geen bestellingen';
+
+  renderAllergies();
+}
+
+// ══════════════════════════════════════
+// HOME GRID
+// ══════════════════════════════════════
+function renderHomeGrid(cat) {
+  const items = cat === 'all' ? menuData.slice(0,8) : menuData.filter(i=>i.cat===cat).slice(0,6);
+  const grid = document.getElementById('home-grid');
+  if (!grid) return;
+  grid.innerHTML = items.map(item => `
+    <div class="product-card">
+      <div class="product-img" style="background:${catColor(item.cat)}">${item.emoji}</div>
+      <div class="product-info">
+        <div class="product-name">${item.name}</div>
+        <div class="product-desc">${item.desc}</div>
+        <div class="product-footer">
+          <span class="product-price">&#8364;${item.price.toFixed(2).replace('.',',')}</span>
+          <button class="add-btn" onclick="addToCart(${item.id}, this)">+</button>
+        </div>
+      </div>
+    </div>
+  `).join('');
+}
+function catColor(cat) {
+  return { pizza:'#FEF3C7', pasta:'#FDECEA', salade:'#DCFCE7', drank:'#DBEAFE', dessert:'#F3E8FF' }[cat] || '#F3F4F6';
+}
+function filterHome(el, cat) {
+  document.querySelectorAll('#screen-home .category-pills .pill').forEach(p=>p.classList.remove('active'));
+  el.classList.add('active');
+  renderHomeGrid(cat);
+}
+
+// ══════════════════════════════════════
+// MENU LIST
+// ══════════════════════════════════════
+function renderMenuList(cat, search) {
+  search = search || '';
+  let items = menuData;
+  if (cat !== 'all') items = items.filter(i=>i.cat===cat);
+  if (search) items = items.filter(i=>i.name.toLowerCase().includes(search.toLowerCase())||i.desc.toLowerCase().includes(search.toLowerCase()));
+  const catGroups = {};
+  items.forEach(i => { if (!catGroups[i.cat]) catGroups[i.cat]=[]; catGroups[i.cat].push(i); });
+  const catNames = { pizza:'Pizza', pasta:'Pasta', salade:'Salade', drank:'Dranken', dessert:'Desserts' };
+  const list = document.getElementById('menu-list');
+  if (!list) return;
+  if (items.length === 0) { list.innerHTML='<div style="text-align:center;padding:40px;color:var(--text-muted)">Geen gerechten gevonden.</div>'; return; }
+  list.innerHTML = Object.entries(catGroups).map(([c, its]) => `
+    <div class="menu-category">
+      <div class="menu-category-title">${catNames[c]||c}</div>
+      ${its.map(item => `
+        <div class="menu-item">
+          <div class="menu-item-img" style="background:${catColor(item.cat)}">${item.emoji}</div>
+          <div class="menu-item-info">
+            <div class="menu-item-name">${item.name}</div>
+            <div class="menu-item-desc">${item.desc}</div>
+            <div class="menu-item-tags">
+              ${item.tags.includes('veg') ? '<span class="tag tag-veg">Vegetarisch</span>' : ''}
+              ${item.tags.includes('spicy') ? '<span class="tag tag-spicy">Pittig</span>' : ''}
+              ${item.tags.includes('popular') ? '<span class="tag tag-popular">Populair</span>' : ''}
+            </div>
+          </div>
+          <div class="menu-item-right">
+            <span class="menu-item-price">&#8364;${item.price.toFixed(2).replace('.',',')}</span>
+            <button class="add-btn" onclick="addToCart(${item.id}, this)">+</button>
+          </div>
+        </div>
+      `).join('')}
+    </div>
+  `).join('');
+}
+function filterMenuCat(el, cat) {
+  document.querySelectorAll('#screen-menu .pill').forEach(p=>p.classList.remove('active'));
+  el.classList.add('active');
+  currentMenuCat = cat;
+  renderMenuList(cat);
+}
+function filterMenu(val) { renderMenuList(currentMenuCat, val); }
+
+// ══════════════════════════════════════
+// WINKELMANDJE
+// ══════════════════════════════════════
+function addToCart(id, btn) {
+  const item = menuData.find(i=>i.id===id);
+  const existing = cart.find(c=>c.id===id);
+  if (existing) existing.qty++;
+  else cart.push(Object.assign({}, item, {qty:1}));
+  btn.classList.add('added'); btn.textContent='ok';
+  setTimeout(function(){ btn.classList.remove('added'); btn.textContent='+'; }, 800);
+  updateCartUI();
+  showToast(item.emoji + ' ' + item.name + ' toegevoegd!');
+}
+function updateCartUI() {
+  const total = cart.reduce(function(s,i){ return s+i.qty; }, 0);
+  const amount = cart.reduce(function(s,i){ return s+(i.price*i.qty); }, 0);
+  document.querySelectorAll('#cart-count-header,#cart-count-menu').forEach(function(el){ el.textContent=total; });
+  document.querySelectorAll('[id^="nav-cart-dot"]').forEach(function(el){ el.setAttribute('data-count', total>0?total:''); });
+  var bar1=document.getElementById('home-cart-bar'), bar2=document.getElementById('menu-cart-bar');
+  if(total>0){ if(bar1)bar1.classList.add('show'); if(bar2)bar2.classList.add('show'); }
+  else{ if(bar1)bar1.classList.remove('show'); if(bar2)bar2.classList.remove('show'); }
+  var hcc=document.getElementById('home-cart-count'); if(hcc) hcc.textContent=total+' item'+(total!==1?'s':'');
+  var hct=document.getElementById('home-cart-total'); if(hct) hct.textContent='&#8364;'+amount.toFixed(2).replace('.',',');
+  var mcc=document.getElementById('menu-cart-count'); if(mcc) mcc.textContent=total+' item'+(total!==1?'s':'');
+  var mct=document.getElementById('menu-cart-total'); if(mct) mct.textContent='&#8364;'+amount.toFixed(2).replace('.',',');
+}
+function renderCart() {
+  var list=document.getElementById('cart-items-list'), empty=document.getElementById('cart-empty');
+  var bottom=document.getElementById('cart-bottom'), orderBar=document.getElementById('place-order-bar');
+  if(cart.length===0){ empty.style.display='block'; list.innerHTML=''; bottom.style.display='none'; orderBar.style.display='none'; return; }
+  empty.style.display='none'; bottom.style.display='block'; orderBar.style.display='block';
+  list.innerHTML = cart.map(function(item){ return `
+    <div class="cart-item">
+      <div class="cart-item-img" style="background:${catColor(item.cat)}">${item.emoji}</div>
+      <div class="cart-item-info">
+        <div class="cart-item-name">${item.name}</div>
+        <div class="cart-item-price">&#8364;${item.price.toFixed(2).replace('.',',')} / stuk</div>
+      </div>
+      <div class="qty-control">
+        <button class="qty-btn" onclick="changeQty(${item.id},-1)" ${item.qty<=1?'disabled':''}>&#8722;</button>
+        <span class="qty-num">${item.qty}</span>
+        <button class="qty-btn" onclick="changeQty(${item.id},1)">+</button>
+      </div>
+    </div>
+  `; }).join('');
+  var sub=cart.reduce(function(s,i){ return s+(i.price*i.qty); },0), btw=sub*0.21, tot=sub+btw+0.50;
+  document.getElementById('subtotal').textContent='&#8364;'+sub.toFixed(2).replace('.',',');
+  document.getElementById('btw').textContent='&#8364;'+btw.toFixed(2).replace('.',',');
+  document.getElementById('total').textContent='&#8364;'+tot.toFixed(2).replace('.',',');
+}
+function changeQty(id, delta) {
+  var item=cart.find(function(c){ return c.id===id; }); if(!item) return;
+  item.qty+=delta;
+  if(item.qty<=0) cart=cart.filter(function(c){ return c.id!==id; });
+  updateCartUI(); renderCart();
+}
+function clearCart(){ cart=[]; updateCartUI(); renderCart(); }
+
+// ══════════════════════════════════════
+// BETALING
+// ══════════════════════════════════════
+function renderPaymentSummary() {
+  var div=document.getElementById('payment-summary');
+  var sub=cart.reduce(function(s,i){ return s+(i.price*i.qty); },0), btw=sub*0.21, tot=sub+btw+0.50;
+  if(div) div.innerHTML=cart.map(function(i){ return '<div style="display:flex;justify-content:space-between;font-size:13px;padding:4px 0;color:var(--text-muted)"><span>'+i.emoji+' '+i.name+' x'+i.qty+'</span><span>&#8364;'+(i.price*i.qty).toFixed(2).replace('.',',')+'</span></div>'; }).join('');
+  var pt=document.getElementById('payment-total'); if(pt) pt.textContent='&#8364;'+tot.toFixed(2).replace('.',',');
+  document.getElementById('payment-content').style.display='flex';
+  document.getElementById('payment-content').style.flexDirection='column';
+  document.getElementById('payment-success').style.display='none';
+}
+function selectPayment(el) {
+  document.querySelectorAll('.payment-method').forEach(function(m){ m.classList.remove('selected'); });
+  el.classList.add('selected');
+}
+function doBetaling() {
+  var user = getCurrentUser();
+  if (user) {
+    var sub=cart.reduce(function(s,i){ return s+(i.price*i.qty); },0);
+    var order = {
+      id: '#' + (456 + (user.orderHistory||[]).length),
+      date: new Date().toLocaleDateString('nl-NL'),
+      items: cart.map(function(i){ return {name:i.name, qty:i.qty, price:i.price, emoji:i.emoji}; }),
+      total: (sub*1.21+0.50).toFixed(2)
+    };
+    user.orderHistory = [order].concat(user.orderHistory||[]);
+    saveCurrentUser(user);
+  }
+  document.getElementById('payment-content').style.display='none';
+  document.getElementById('payment-success').style.display='flex';
+}
+function resetAndGoHome() {
+  clearCart();
+  document.getElementById('payment-content').style.display='block';
+  document.getElementById('payment-success').style.display='none';
+  goTo('home');
+}
+
+// ══════════════════════════════════════
+// ADMIN
+// ══════════════════════════════════════
+function switchAdmin(el, panel) {
+  document.querySelectorAll('.admin-nav-item').forEach(function(i){ i.classList.remove('active'); });
+  el.classList.add('active');
+  document.querySelectorAll('.admin-panel').forEach(function(p){ p.classList.remove('active'); });
+  document.getElementById('admin-'+panel).classList.add('active');
+  if(panel==='accounts') renderAdminAccounts();
+}
+function renderAdminMenu() {
+  var list=document.getElementById('admin-menu-list'); if(!list) return;
+  list.innerHTML=menuData.map(function(item){ return '<div class="admin-list-item"><div class="admin-list-item-icon">'+item.emoji+'</div><div class="admin-list-item-info"><div class="admin-list-item-name">'+item.name+'</div><div class="admin-list-item-sub">&#8364;'+item.price.toFixed(2).replace('.',',')+' &middot; '+item.cat+'</div></div><button class="toggle-switch on" onclick="this.classList.toggle(\'on\');showToast(this.classList.contains(\'on\')?\'Beschikbaar: '+item.name+'\':\'Niet beschikbaar: '+item.name+'\')"></button></div>'; }).join('');
+  renderAdminAccounts();
+}
+function renderAdminAccounts() {
+  var el = document.getElementById('admin-accounts-list'); if(!el) return;
+  var accounts = getAccounts().filter(function(a){ return a.email!=='admin@bistrotafel.be'&&a.email!=='keuken@bistrotafel.be'; });
+  if(accounts.length===0){ el.innerHTML='<div style="text-align:center;padding:30px;color:var(--text-muted)">Nog geen klantaccounts geregistreerd.</div>'; return; }
+  el.innerHTML=accounts.map(function(u){ return '<div class="admin-list-item"><div class="admin-list-item-icon">&#128100;</div><div class="admin-list-item-info"><div class="admin-list-item-name">'+u.name+'</div><div class="admin-list-item-sub">'+u.email+' &middot; '+(u.orderHistory||[]).length+' bestellingen &middot; Allergieën: '+((u.allergies||[]).join(', ')||'geen')+'</div></div><span class="status-badge status-klaar">Actief</span></div>'; }).join('');
+}
+
+// ══════════════════════════════════════
+// KEUKEN
+// ══════════════════════════════════════
+var kitchenOrders = [
+  { id:'#451', table:'T3', time:'18:52', status:'new', items:['2x Margherita','1x Carbonara'] },
+  { id:'#452', table:'T1', time:'18:40', status:'progress', items:['1x Quattro Stagioni','2x Limonade'] },
+  { id:'#453', table:'T8', time:'18:35', status:'ready', items:['3x Caesar Salade','1x Tiramisu'] },
+  { id:'#454', table:'T5', time:'19:01', status:'new', items:['1x Penne Arrabbiata'] },
+  { id:'#455', table:'T12', time:'18:58', status:'progress', items:['2x Tagliatelle','1x Huiswijn'] },
+];
+function renderKitchen() {
+  var board=document.getElementById('kitchen-board');
+  var nw=kitchenOrders.filter(function(o){ return o.status==='new'; });
+  var pr=kitchenOrders.filter(function(o){ return o.status==='progress'; });
+  var rd=kitchenOrders.filter(function(o){ return o.status==='ready'; });
+  board.innerHTML='<div><div class="kitchen-column-header col-new">Nieuw ('+nw.length+')</div>'+nw.map(kitchenCard).join('')+'</div><div><div class="kitchen-column-header col-progress">In bereiding ('+pr.length+')</div>'+pr.map(kitchenCard).join('')+'</div><div><div class="kitchen-column-header col-ready">Klaar ('+rd.length+')</div>'+rd.map(kitchenCard).join('')+'</div>';
+}
+function kitchenCard(o) {
+  return '<div class="kitchen-order-card '+(o.status==='new'?'new-order':'')+'"><div class="kitchen-order-header"><div class="kitchen-table-num">'+o.table+'</div><div><div style="font-size:11px;font-weight:700;color:var(--text-muted)">'+o.id+'</div><div class="kitchen-order-time">'+o.time+'</div></div></div><div class="kitchen-order-items">'+o.items.map(function(i){ return '<div class="kitchen-order-item"><span class="kitchen-qty">'+i.split('x')[0]+'x</span><span>'+i.split('x ')[1]+'</span></div>'; }).join('')+'</div><div class="kitchen-order-actions">'+(o.status==='new'?'<button class="kitchen-btn kitchen-btn-start" onclick="showToast(\'In bereiding: '+o.table+'\')">Start</button>':'')+(o.status==='progress'?'<button class="kitchen-btn kitchen-btn-ready" onclick="showToast(\'Klaar: '+o.table+'\')">Klaar</button>':'')+(o.status==='ready'?'<button class="kitchen-btn kitchen-btn-deliver" onclick="showToast(\'Geleverd: '+o.table+'\')">Geleverd</button>':'')+'</div></div>';
+}
+
+// ══════════════════════════════════════
+// ALLERGIEEN (opgeslagen per gebruiker)
+// ══════════════════════════════════════
+function renderAllergies() {
+  var grid=document.getElementById('allergy-grid'); if(!grid) return;
+  var user=getCurrentUser();
+  var active=user ? (user.allergies||[]) : [];
+  grid.innerHTML=allergyList.map(function(a){ return '<div class="allergy-tag '+(active.includes(a)?'active':'')+'" onclick="toggleAllergy(\''+a+'\')"><span>'+(active.includes(a)?'&#10003; ':'')+a+'</span></div>'; }).join('');
+  var sub=document.getElementById('allergy-sub');
+  if(sub) sub.textContent = active.length ? active.join(', ') : 'Geen allergieën ingesteld';
+}
+
+function toggleAllergy(name) {
+  var user=getCurrentUser();
+  if(!user){ showToast('Log in om allergieën op te slaan.'); return; }
+  var allergies=user.allergies||[];
+  if(allergies.includes(name)){
+    user.allergies=allergies.filter(function(a){ return a!==name; });
+    showToast(name+' verwijderd van uw profiel');
+  } else {
+    user.allergies=[].concat(allergies,[name]);
+    showToast(name+' toegevoegd aan uw profiel');
+  }
+  saveCurrentUser(user);
+  renderAllergies();
+  // Update subtitle
+  var sub=document.getElementById('allergy-sub');
+  if(sub) sub.textContent=(user.allergies||[]).length ? user.allergies.join(', ') : 'Geen allergieën ingesteld';
+}
+
+// Bestelhistorie modal
+function openHistorieModal() {
+  var user=getCurrentUser();
+  var modal=document.getElementById('historie-modal');
+  var content=document.getElementById('historie-content');
+  var orders=user?(user.orderHistory||[]):[];
+  if(orders.length===0){
+    content.innerHTML='<div style="text-align:center;padding:30px;color:var(--text-muted)">Nog geen bestellingen geplaatst.</div>';
+  } else {
+    content.innerHTML=orders.map(function(o){ return '<div style="background:white;border:1px solid var(--border);border-radius:var(--radius-sm);padding:14px;margin-bottom:10px;"><div style="display:flex;justify-content:space-between;margin-bottom:8px;"><span style="font-weight:700;color:var(--terracotta)">'+o.id+'</span><span style="font-size:12px;color:var(--text-muted)">'+o.date+'</span></div>'+o.items.map(function(i){ return '<div style="font-size:13px;color:var(--text-muted);padding:2px 0">'+(i.emoji||'')+'  '+i.name+' x'+i.qty+' - &#8364;'+(i.price*i.qty).toFixed(2).replace('.',',')+'</div>'; }).join('')+'<div style="border-top:1px solid var(--border);margin-top:8px;padding-top:8px;font-weight:700;display:flex;justify-content:space-between;"><span>Totaal</span><span style="color:var(--terracotta)">&#8364;'+o.total+'</span></div></div>'; }).join('');
+  }
+  modal.classList.add('show');
+}
+function closeHistorieModal(){ document.getElementById('historie-modal').classList.remove('show'); }
+
+// Taal modal
+function openTaalModal() {
+  var user=getCurrentUser();
+  var current=user?(user.taal||'NL'):'NL';
+  document.querySelectorAll('.taal-option').forEach(function(el){ el.classList.toggle('selected', el.getAttribute('data-taal')===current); });
+  document.getElementById('taal-modal').classList.add('show');
+}
+function closeTaalModal(){ document.getElementById('taal-modal').classList.remove('show'); }
+function setTaal(taal) {
+  var user=getCurrentUser(); if(!user) return;
+  user.taal=taal; saveCurrentUser(user);
+  var taalNames={NL:'Nederlands (NL)',FR:'Frans (FR)',EN:'Engels (EN)'};
+  var subs=document.querySelectorAll('#screen-profiel .profile-option-sub');
+  if(subs[1]) subs[1].textContent=taalNames[taal]||taal;
+  showToast('Taalvoorkeur opgeslagen: '+taalNames[taal]);
+  closeTaalModal();
+}
+
+// ══════════════════════════════════════
+// KLOK
+// ══════════════════════════════════════
+function updateClock() {
+  var now=new Date();
+  var cl=document.getElementById('kitchen-clock'), cd=document.getElementById('kitchen-date');
+  if(cl) cl.textContent=now.toLocaleTimeString('nl-NL',{hour:'2-digit',minute:'2-digit'});
+  if(cd){ var d=now.toLocaleDateString('nl-NL',{weekday:'long',day:'numeric',month:'long',year:'numeric'}); cd.textContent=d.charAt(0).toUpperCase()+d.slice(1); }
+}
+
+// ══════════════════════════════════════
+// TOAST
+// ══════════════════════════════════════
+var toastTimer;
+function showToast(msg) {
+  var t=document.getElementById('toast');
+  t.textContent=msg; t.classList.add('show');
+  clearTimeout(toastTimer);
+  toastTimer=setTimeout(function(){ t.classList.remove('show'); }, 2800);
+}
+</script>
+</body>
+</html>
